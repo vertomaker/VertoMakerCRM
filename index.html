@@ -2403,7 +2403,8 @@ async function baixarPDF(){
   btn.disabled=true;
   try {
     const el=document.getElementById('pdf-visual');
-    const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+    const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false,windowWidth: el.scrollWidth,
+  windowHeight: el.scrollHeight});
     const imgData=canvas.toDataURL('image/png');
     const {jsPDF}=window.jspdf;
     const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
