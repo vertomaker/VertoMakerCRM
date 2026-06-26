@@ -2401,9 +2401,16 @@ async function baixarPDF(){
   const btn=document.getElementById('btn-baixar-pdf');
   btn.textContent='⏳ Gerando...';
   btn.disabled=true;
+  const el=document.getElementById('pdf-visual');
+  // Guarda o estilo original para restaurar depois — o max-height/overflow
+  // existe só para caber no modal na tela, mas limita a captura do html2canvas
+  // à área visível. Removendo temporariamente, o elemento assume sua altura
+  // real (todo o conteúdo do orçamento) antes de virar imagem.
+  const estiloOriginal={maxHeight:el.style.maxHeight,overflowY:el.style.overflowY};
+  el.style.maxHeight='none';
+  el.style.overflowY='visible';
   try {
-    const el=document.getElementById('pdf-visual');
-    const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+    const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false,windowHeight:el.scrollHeight,height:el.scrollHeight});
     const imgData=canvas.toDataURL('image/png');
     const {jsPDF}=window.jspdf;
     const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
@@ -2438,6 +2445,9 @@ async function baixarPDF(){
   } catch(e){
     showToast('⚠️ Erro ao gerar PDF: '+e.message,'⚠️');
   }
+  // Restaura o visual do modal (scroll de volta, igual estava antes)
+  el.style.maxHeight=estiloOriginal.maxHeight;
+  el.style.overflowY=estiloOriginal.overflowY;
   btn.textContent='⬇️ Baixar PDF';
   btn.disabled=false;
 }
