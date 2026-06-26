@@ -2397,73 +2397,51 @@ function whatsTexto(){
   showToast('💬 WhatsApp aberto com o texto do orçamento!');
 }
 
-async function baixarPDF() {
-    const btn = document.getElementById('btn-baixar-pdf');
-    const elOriginal = document.getElementById('pdf-visual');
-    
-    if (!elOriginal) {
-        showToast('⚠️ Elemento não encontrado!');
-        return;
+async function baixarPDF(){
+  const btn=document.getElementById('btn-baixar-pdf');
+  btn.textContent='⏳ Gerando...';
+  btn.disabled=true;
+  try {
+    const el=document.getElementById('pdf-visual');
+    const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+    const imgData=canvas.toDataURL('image/png');
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const pdfW=pdf.internal.pageSize.getWidth();
+    const pdfH=pdf.internal.pageSize.getHeight();
+    const ratio=canvas.width/canvas.height;
+    const imgW=pdfW-20;
+    const imgH=imgW/ratio;
+    let y=10;
+    let remaining=imgH;
+    const pageH=pdfH-20;
+    // Multi-page support
+    const totalPages=Math.ceil(imgH/pageH);
+    for(let p=0;p<totalPages;p++){
+      if(p>0)pdf.addPage();
+      const srcY=p*pageH*(canvas.height/imgH);
+      const srcH=Math.min(pageH*(canvas.height/imgH),canvas.height-srcY);
+      const sliceCanvas=document.createElement('canvas');
+      sliceCanvas.width=canvas.width;
+      sliceCanvas.height=srcH;
+      const ctx=sliceCanvas.getContext('2d');
+      ctx.drawImage(canvas,0,srcY,canvas.width,srcH,0,0,canvas.width,srcH);
+      const sliceData=sliceCanvas.toDataURL('image/png');
+      const sliceH=srcH*(imgW/canvas.width);
+      pdf.addImage(sliceData,'PNG',10,10,imgW,sliceH);
     }
-
-    btn.textContent = '⏳ Gerando...';
-    btn.disabled = true;
-
-    try {
-        // 1. Criar um container temporário invisível e sem restrições
-        const container = document.createElement('div');
-        container.style.position = 'absolute';
-        container.style.left = '-9999px';
-        container.style.top = '0';
-        container.style.width = '210mm'; // Largura A4
-        container.style.padding = '20px';
-        container.style.backgroundColor = '#ffffff'; // Fundo branco obrigatório para PDF
-        container.style.color = '#000000'; // Texto preto
-        
-        // 2. Clonar o elemento e remover restrições de CSS que causam cortes
-        const clone = elOriginal.cloneNode(true);
-        clone.style.height = 'auto';
-        clone.style.maxHeight = 'none';
-        clone.style.overflow = 'visible';
-        container.appendChild(clone);
-        document.body.appendChild(container);
-
-        // 3. Capturar o container clonado
-        const canvas = await html2canvas(container, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            windowWidth: container.scrollWidth,
-            windowHeight: container.scrollHeight,
-            backgroundColor: '#ffffff'
-        });
-
-        // 4. Remover o container temporário
-        document.body.removeChild(container);
-
-        // 5. Gerar o PDF (sua lógica existente)
-        const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        
-        const pdfW = 210; // Largura A4
-        const imgRatio = canvas.height / canvas.width;
-        const imgH = (pdfW - 20) * imgRatio;
-        
-        pdf.addImage(imgData, 'PNG', 10, 10, pdfW - 20, imgH);
-        
-        pdf.save('Orcamento.pdf');
-        showToast('✅ PDF gerado com sucesso!');
-
-    } catch (e) {
-        console.error(e);
-        showToast('⚠️ Erro: ' + e.message);
-    } finally {
-        btn.textContent = '⬇️ Baixar PDF';
-        btn.disabled = false;
-    }
+    const empresa=(document.getElementById('orc-empresa').value||'Vertomaker').replace(/\s/g,'_');
+    const cliente=(document.getElementById('orc-cliente').value||'cliente').replace(/\s/g,'_');
+    const numero=document.getElementById('orc-numero').value||new Date().toISOString().slice(0,10);
+    pdf.save(`Orcamento_${empresa}_${cliente}_${numero}.pdf`);
+    showToast('✅ PDF baixado com sucesso!');
+  } catch(e){
+    showToast('⚠️ Erro ao gerar PDF: '+e.message,'⚠️');
+  }
+  btn.textContent='⬇️ Baixar PDF';
+  btn.disabled=false;
 }
-  
+
 function whatsComPDF(){
   // Baixa o PDF e orienta o usuário a enviar
   baixarPDF();
