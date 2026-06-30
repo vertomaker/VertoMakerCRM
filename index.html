@@ -1824,6 +1824,7 @@ select.form-input option{background:var(--bg-card);}
 
       <div class="card"><div class="card-body">
         <div style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;margin-bottom:14px">🗑️ Dados</div>
+        <div id="storage-usage-info" style="font-size:13px;color:var(--text-secondary);margin-bottom:14px"></div>
         <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">Limpar todos os dados salvos (tarefas, transações, etc.). Esta ação não pode ser desfeita.</div>
         <button class="btn btn-danger" onclick="limparDados()">🗑️ Limpar Todos os Dados</button>
       </div></div>
@@ -1940,7 +1941,12 @@ function salvarDB(){
       localStorage.setItem(VTM_DB_KEY, JSON.stringify(coletarDB()));
     }catch(e){
       console.error('Erro ao salvar dados localmente:', e);
-      showToast('⚠️ Não foi possível salvar os dados (armazenamento cheio?).','⚠️');
+      const isQuota = e && (e.name==='QuotaExceededError' || e.code===22 || e.code===1014);
+      if(isQuota){
+        showToast('⚠️ Armazenamento do navegador está cheio. Limpe dados antigos em Configurações.','⚠️');
+      }else{
+        showToast('⚠️ Erro ao salvar (' + (e && e.name ? e.name : 'desconhecido') + '). Veja o console para detalhes.','⚠️');
+      }
     }
   }, 150);
 }
@@ -2093,6 +2099,7 @@ function navigateTo(pageId,el){
     document.getElementById('topbar-sub').textContent=pageTitles[pageId][1];
   }
   if(pageId==='clientes')renderClientes();
+  if(pageId==='configuracoes')atualizarUsoArmazenamento();
   closeSidebar();
 }
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
@@ -3169,9 +3176,22 @@ function previewFotoPeca(input){
   if(!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    pecaFotoData = e.target.result;
-    document.getElementById('peca-foto-img').src = pecaFotoData;
-    document.getElementById('peca-foto-preview').style.display = 'block';
+    const img = new Image();
+    img.onload = () => {
+      // Redimensiona para no máximo 800px no maior lado e comprime em JPEG
+      // para evitar que fotos de celular (vários MB) lotem a cota do localStorage (~5-10MB).
+      const MAX_DIM = 800;
+      let { width, height } = img;
+      if (width > height && width > MAX_DIM) { height = Math.round(height * MAX_DIM / width); width = MAX_DIM; }
+      else if (height > MAX_DIM) { width = Math.round(width * MAX_DIM / height); height = MAX_DIM; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      pecaFotoData = canvas.toDataURL('image/jpeg', 0.7);
+      document.getElementById('peca-foto-img').src = pecaFotoData;
+      document.getElementById('peca-foto-preview').style.display = 'block';
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -3989,6 +4009,28 @@ function limparDados(){
   renderTasks();renderEstoque();renderFinanceiro();renderImpressoras();renderCatalogo();renderClientes();
   salvarDB();
   showToast('🗑️ Dados apagados.','🗑️');
+}
+
+function atualizarUsoArmazenamento(){
+  const el = document.getElementById('storage-usage-info');
+  if(!el) return;
+  try{
+    const raw = localStorage.getItem(VTM_DB_KEY) || '';
+    const bytes = new Blob([raw]).size;
+    const kb = (bytes/1024).toFixed(0);
+    // A maioria dos navegadores reserva ~5MB por domínio para localStorage.
+    const limiteMB = 5;
+    const usadoMB = bytes/1024/1024;
+    const pct = Math.min(100, (usadoMB/limiteMB*100)).toFixed(1);
+    const cor = usadoMB > limiteMB*0.85 ? 'var(--danger)' : usadoMB > limiteMB*0.6 ? 'var(--warning)' : 'var(--success)';
+    el.innerHTML = `📦 Uso de armazenamento local: <strong style="color:${cor}">${kb} KB</strong> de ~${limiteMB} MB disponíveis (${pct}%)
+      <div style="background:var(--bg-card);border-radius:6px;height:6px;margin-top:6px;overflow:hidden">
+        <div style="background:${cor};height:100%;width:${pct}%;transition:width .3s"></div>
+      </div>
+      ${usadoMB > limiteMB*0.7 ? '<div style="margin-top:8px;font-size:11px;color:var(--text-muted)">⚠️ Fotos de peças no catálogo costumam ser a maior causa de espaço usado. Considere remover fotos antigas ou fazer um backup e limpar tarefas finalizadas antigas.</div>' : ''}`;
+  }catch(e){
+    el.textContent = '';
+  }
 }
 
 // ===================== CALENDÁRIO =====================
