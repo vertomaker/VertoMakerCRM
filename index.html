@@ -213,6 +213,22 @@ select.form-input option{background:var(--bg-card);}
 .empty-state-icon{font-size:48px;margin-bottom:12px;opacity:.4;}
 .empty-state-text{font-size:14px;font-family:'JetBrains Mono',monospace;}
 
+/* KANBAN */
+.kanban-board{display:flex;gap:14px;overflow-x:auto;padding-bottom:12px;align-items:flex-start;}
+.kanban-col{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;min-width:240px;max-width:240px;flex-shrink:0;display:flex;flex-direction:column;max-height:calc(100vh - 220px);}
+.kanban-col-header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;flex-shrink:0;}
+.kanban-col-count{margin-left:auto;background:var(--bg-card);color:var(--text-secondary);font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace;}
+.kanban-col-body{padding:10px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;flex:1;min-height:60px;transition:background .15s;}
+.kanban-col-body.drag-over{background:rgba(0,212,255,.08);outline:2px dashed var(--accent);outline-offset:-4px;border-radius:8px;}
+.kanban-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:grab;transition:all .15s;}
+.kanban-card:hover{border-color:var(--border-bright);transform:translateY(-1px);}
+.kanban-card.dragging{opacity:.4;}
+.kanban-card-name{font-size:13px;font-weight:700;margin-bottom:4px;}
+.kanban-card-meta{font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:8px;}
+.kanban-card-valor{font-size:12px;color:var(--success);font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:8px;}
+.kanban-card-actions{display:flex;gap:6px;}
+.kanban-card-actions .btn{padding:4px 8px;font-size:11px;flex:1;justify-content:center;}
+
 /* MENU MOBILE */
 .menu-toggle{display:none;position:fixed;top:14px;left:14px;z-index:200;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;width:40px;height:40px;align-items:center;justify-content:center;cursor:pointer;font-size:18px;}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90;backdrop-filter:blur(4px);}
@@ -956,6 +972,277 @@ select.form-input option{background:var(--bg-card);}
   </div>
 </div>
 
+<!-- Modal: Novo/Editar Cliente -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <div class="modal-title" id="cliente-modal-title">👤 Novo Cliente</div>
+    <div class="orcamento-form">
+      <div class="form-group">
+        <label class="form-label">Nome do Cliente *</label>
+        <input type="text" class="form-input" placeholder="Ex: Ana Lucia" id="cli-nome">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Contato (telefone/WhatsApp)</label>
+          <input type="text" class="form-input" placeholder="Ex: (11) 99999-9999" id="cli-contato">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Etapa do Funil</label>
+          <select class="form-input" id="cli-estagio">
+            <option value="contato">📞 Contato</option>
+            <option value="agendado">📅 Agendado</option>
+            <option value="teste">🎧 Em Teste</option>
+            <option value="proposta">📋 Proposta</option>
+            <option value="vendido">✅ Vendido</option>
+            <option value="perdido">❌ Perdido</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Valor do Pedido (R$)</label>
+          <input type="number" class="form-input" placeholder="Ex: 80.00" step="0.01" id="cli-valor">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Origem</label>
+          <input type="text" class="form-input" placeholder="Ex: Instagram, Indicação..." id="cli-origem">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observações</label>
+        <input type="text" class="form-input" placeholder="Detalhes do pedido, peça desejada, etc." id="cli-obs">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cliente')">Cancelar</button>
+      <button class="btn btn-primary" id="cliente-modal-save-btn" onclick="salvarCliente()">👤 Salvar Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Excluir Cliente -->
+<div class="modal-overlay" id="modal-excluir-cliente">
+  <div class="modal" style="width:380px">
+    <div class="modal-title">🗑️ Excluir Cliente</div>
+    <p style="font-size:14px;color:var(--text-secondary)">Tem certeza que deseja excluir <strong id="excluir-cli-nome" style="color:var(--text-primary)"></strong>? Esta ação não pode ser desfeita.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-excluir-cliente')">Cancelar</button>
+      <button class="btn btn-danger" onclick="excluirClienteConfirmado()">🗑️ Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Tarefa -->
+<div class="modal-overlay" id="modal-editar-tarefa">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar Tarefa</div>
+    <div class="orcamento-form">
+      <div class="form-group">
+        <label class="form-label">Nome do Pedido</label>
+        <input type="text" class="form-input" id="et-name">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Cliente</label>
+          <input type="text" class="form-input" id="et-client">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prazo de Entrega</label>
+          <input type="date" class="form-input" id="et-date">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Material</label>
+          <select class="form-input" id="et-material">
+            <option>PLA Branco</option><option>PLA Preto</option>
+            <option>PETG Transparente</option><option>ABS Cinza</option>
+            <option>Resina Standard</option><option>TPU Flexível</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Peso Estimado (g)</label>
+          <input type="number" class="form-input" id="et-weight">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Valor Cobrado (R$)</label>
+          <input type="number" class="form-input" step="0.01" id="et-valor">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Observações</label>
+          <input type="text" class="form-input" id="et-obs">
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-editar-tarefa')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicaoTarefa()">✅ Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Excluir Tarefa -->
+<div class="modal-overlay" id="modal-excluir-tarefa">
+  <div class="modal" style="width:380px">
+    <div class="modal-title">🗑️ Excluir Tarefa</div>
+    <p style="font-size:14px;color:var(--text-secondary)">Tem certeza que deseja excluir a tarefa <strong id="excluir-tarefa-nome" style="color:var(--text-primary)"></strong>? Esta ação não pode ser desfeita.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-excluir-tarefa')">Cancelar</button>
+      <button class="btn btn-danger" onclick="excluirTarefaConfirmado()">🗑️ Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Transação -->
+<div class="modal-overlay" id="modal-editar-tx">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar Lançamento</div>
+    <div class="orcamento-form">
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <div style="display:flex;gap:10px">
+          <label id="et-lbl-receita" style="flex:1;text-align:center;padding:10px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+            <input type="radio" name="et-tx-tipo" value="entrada" style="margin-right:6px" onchange="toggleEtTxTipo()">Receita
+          </label>
+          <label id="et-lbl-despesa" style="flex:1;text-align:center;padding:10px;border:1px solid var(--border);border-radius:8px;cursor:pointer">
+            <input type="radio" name="et-tx-tipo" value="saida" style="margin-right:6px" onchange="toggleEtTxTipo()">Despesa
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <input type="text" class="form-input" id="et-tx-desc">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Valor (R$)</label>
+          <input type="number" class="form-input" step="0.01" id="et-tx-valor">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data</label>
+          <input type="date" class="form-input" id="et-tx-data">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select class="form-input" id="et-tx-categoria">
+          <option>Filamento</option><option>Energia</option><option>Manutenção</option>
+          <option>Venda</option><option>Outros</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-editar-tx')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicaoTx()">✅ Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Peça do Catálogo -->
+<div class="modal-overlay" id="modal-editar-peca">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar Peça</div>
+    <div class="orcamento-form">
+      <div class="form-group">
+        <label class="form-label">Nome da Peça</label>
+        <input type="text" class="form-input" id="ep-nome">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tempo (h)</label>
+          <input type="number" class="form-input" id="ep-horas">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tempo (min)</label>
+          <input type="number" class="form-input" id="ep-minutos">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Peso (g)</label>
+          <input type="number" class="form-input" id="ep-peso">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Custo (R$)</label>
+          <input type="number" class="form-input" step="0.01" id="ep-custo">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Filamento</label>
+        <input type="text" class="form-input" id="ep-filamento">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-editar-peca')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicaoPeca()">✅ Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Prompt -->
+<div class="modal-overlay" id="modal-editar-prompt">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar Prompt</div>
+    <div class="orcamento-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Emoji</label>
+          <input type="text" class="form-input" id="epr-emoji" maxlength="4">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nome</label>
+          <input type="text" class="form-input" id="epr-nome">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <input type="text" class="form-input" id="epr-desc">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Texto do Prompt</label>
+        <textarea class="form-input" rows="5" id="epr-texto" style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-editar-prompt')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicaoPrompt()">✅ Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Link -->
+<div class="modal-overlay" id="modal-editar-link">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar Link</div>
+    <div class="orcamento-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Emoji</label>
+          <input type="text" class="form-input" id="elk-emoji" maxlength="4">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nome</label>
+          <input type="text" class="form-input" id="elk-nome">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">URL</label>
+        <input type="text" class="form-input" id="elk-url">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <input type="text" class="form-input" id="elk-desc">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-editar-link')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicaoLink()">✅ Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== SIDEBAR ===================== -->
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-logo">
@@ -970,6 +1257,7 @@ select.form-input option{background:var(--bg-card);}
     <div class="sidebar-section-label">Pedidos</div>
     <div class="nav-item" onclick="navigateTo('tarefas-andamento',this)"><div class="nav-icon">🔄</div>Tarefas em Andamento<span class="nav-badge" id="badge-andamento">2</span></div>
     <div class="nav-item" onclick="navigateTo('tarefas-finalizadas',this)"><div class="nav-icon">✅</div>Tarefas Finalizadas<span class="nav-badge green" id="badge-finalizadas">5</span></div>
+    <div class="nav-item" onclick="navigateTo('clientes',this)"><div class="nav-icon">👥</div>Clientes<span class="nav-badge" id="badge-clientes">0</span></div>
     <div class="nav-item" onclick="navigateTo('estatisticas',this)"><div class="nav-icon">📈</div>Estatísticas</div>
     <div class="nav-item" onclick="navigateTo('calendario',this)"><div class="nav-icon">📅</div>Calendário</div>
   </div>
@@ -1096,6 +1384,15 @@ select.form-input option{background:var(--bg-card);}
       <div><div class="section-title">✅ Tarefas Finalizadas</div><div class="section-sub">HISTÓRICO DE PEDIDOS ENTREGUES</div></div>
     </div>
     <div class="card"><div class="card-body" id="finalizadas-list" style="padding:0 20px"></div></div>
+  </div>
+
+  <!-- CLIENTES (KANBAN) -->
+  <div class="page" id="page-clientes">
+    <div class="section-header">
+      <div><div class="section-title">👥 Clientes</div><div class="section-sub">FUNIL DE VENDAS · ARRASTE OS CARDS ENTRE AS ETAPAS</div></div>
+      <button class="btn btn-primary" onclick="abrirNovoCliente()">+ Novo Cliente</button>
+    </div>
+    <div class="kanban-board" id="kanban-board"></div>
   </div>
 
   <!-- ESTATÍSTICAS -->
@@ -1599,6 +1896,12 @@ let nextLinkId = 7;
 
 let impressoras = [];
 
+let clientes = [];
+let nextClienteId = 1;
+const CLIENTE_ESTAGIOS = ['contato','agendado','teste','proposta','vendido','perdido'];
+const CLIENTE_ESTAGIO_LABEL = {contato:'Contato',agendado:'Agendado',teste:'Em Teste',proposta:'Proposta',vendido:'Vendido',perdido:'Perdido'};
+const CLIENTE_ESTAGIO_ICON = {contato:'📞',agendado:'📅',teste:'🎧',proposta:'📋',vendido:'✅',perdido:'❌'};
+
 let config = {empresa:'Vertomaker',energia:0.80,mao:5,whats:'',watts:240};
 let calOffset = 0;
 
@@ -1618,6 +1921,7 @@ function coletarDB(){
     links, nextLinkId,
     impressoras,
     catalogo, nextPecaId,
+    clientes, nextClienteId,
     config, calOffset,
   };
 }
@@ -1663,6 +1967,9 @@ function aplicarDB(db){
     catalogo = db.catalogo;
     nextPecaId = db.nextPecaId || (Math.max(0,...catalogo.map(p=>p.id||0))+1);
   }
+
+  clientes = Array.isArray(db.clientes) ? db.clientes : [];
+  nextClienteId = db.nextClienteId || (Math.max(0,...clientes.map(c=>c.id||0))+1);
 
   config = (db.config && typeof db.config==='object') ? {...config, ...db.config} : config;
   calOffset = typeof db.calOffset === 'number' ? db.calOffset : 0;
@@ -1711,7 +2018,7 @@ function restaurarBackup(ev){
       aplicarDB(db);
       salvarDB();
       renderTasks(); renderEstoque(); renderFinanceiro(); renderPrompts();
-      renderLinks(); renderCalendar(); renderMiniChart(); renderItens();
+      renderLinks(); renderCalendar(); renderMiniChart(); renderItens(); renderClientes();
       atualizarSidebar();
       showToast('✅ Backup restaurado com sucesso!','✅');
     }catch(err){
@@ -1746,6 +2053,7 @@ const pageTitles={
   'dashboard':['Painel de Controle','Vertomaker / Dashboard'],
   'tarefas-andamento':['Tarefas em Andamento','Pedidos / Em Andamento'],
   'tarefas-finalizadas':['Tarefas Finalizadas','Pedidos / Finalizadas'],
+  'clientes':['Clientes','Vendas / Funil de Clientes'],
   'estatisticas':['Estatísticas','Pedidos / Estatísticas'],
   'calendario':['Calendário','Pedidos / Calendário'],
   'estoque':['Estoque','Gestão / Estoque'],
@@ -1774,6 +2082,7 @@ function navigateTo(pageId,el){
     document.getElementById('topbar-title').textContent=pageTitles[pageId][0];
     document.getElementById('topbar-sub').textContent=pageTitles[pageId][1];
   }
+  if(pageId==='clientes')renderClientes();
   closeSidebar();
 }
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
@@ -1785,29 +2094,38 @@ function renderTasks(){
   badgeEl.textContent=tasks.length;
   document.getElementById('dash-andamento').textContent=tasks.length;
 
-  const html=tasks.length===0
-    ?`<div class="empty-state"><div class="empty-state-icon">🖨️</div><div class="empty-state-text">Nenhuma tarefa em andamento.<br>Clique em "+ Nova Tarefa" para começar.</div></div>`
-    :tasks.map(t=>{
-      const daysLeft=Math.ceil((new Date(t.deadline)-new Date())/86400000);
-      const urg=daysLeft<2?'urgent':daysLeft<5?'normal':'ok';
-      const lbl=daysLeft<0?'ATRASADO':daysLeft===0?'HOJE':daysLeft+'d';
-      return`<div class="task-item">
+  function taskRow(t, withActions){
+    const daysLeft=Math.ceil((new Date(t.deadline)-new Date())/86400000);
+    const urg=daysLeft<2?'urgent':daysLeft<5?'normal':'ok';
+    const lbl=daysLeft<0?'ATRASADO':daysLeft===0?'HOJE':daysLeft+'d';
+    const actions = withActions ? `
+        <button class="btn btn-ghost" style="padding:4px 9px;font-size:11px;margin-left:6px" onclick="openProgresso(${t.id})" title="Atualizar progresso">📊</button>
+        <button class="btn btn-success" style="padding:4px 9px;font-size:11px;margin-left:4px" onclick="finishTask(${t.id})" title="Finalizar">✅</button>
+        <button class="btn btn-ghost" style="padding:4px 9px;font-size:11px;margin-left:4px" onclick="abrirEdicaoTarefa(${t.id})" title="Editar">✏️</button>
+        <button class="btn btn-danger" style="padding:4px 9px;font-size:11px;margin-left:4px" onclick="confirmarExclusaoTarefa(${t.id})" title="Excluir">🗑️</button>` : '';
+    return`<div class="task-item">
         <div class="task-status running">🔄</div>
         <div class="task-info">
           <div class="task-name">${t.name} — ${t.client}</div>
           <div class="task-meta">${t.material} · ${t.weight}g · ${t.progress}% concluído${t.obs?' · '+t.obs:''}</div>
           <div class="print-progress" style="margin-top:6px;width:160px"><div class="print-progress-bar" style="width:${t.progress}%"></div></div>
         </div>
-        <span class="task-deadline ${urg}">${lbl}</span>
-        <button class="btn btn-ghost" style="padding:4px 9px;font-size:11px;margin-left:6px" onclick="openProgresso(${t.id})">📊</button>
-        <button class="btn btn-success" style="padding:4px 9px;font-size:11px;margin-left:4px" onclick="finishTask(${t.id})">✅</button>
+        <span class="task-deadline ${urg}">${lbl}</span>${actions}
       </div>`;
-    }).join('');
+  }
 
-  ['dashboard-tasks','andamento-list'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el)el.innerHTML=html;
-  });
+  const html=tasks.length===0
+    ?`<div class="empty-state"><div class="empty-state-icon">🖨️</div><div class="empty-state-text">Nenhuma tarefa em andamento.<br>Clique em "+ Nova Tarefa" para começar.</div></div>`
+    :tasks.map(t=>taskRow(t,true)).join('');
+
+  const dashHtml=tasks.length===0
+    ?`<div class="empty-state"><div class="empty-state-icon">🖨️</div><div class="empty-state-text">Nenhuma tarefa em andamento.<br>Clique em "+ Nova Tarefa" para começar.</div></div>`
+    :tasks.map(t=>taskRow(t,false)).join('');
+
+  const andEl=document.getElementById('andamento-list');
+  if(andEl)andEl.innerHTML=html;
+  const dashEl=document.getElementById('dashboard-tasks');
+  if(dashEl)dashEl.innerHTML=dashHtml;
 
   renderFinalizadas();
   updateDashStats();
@@ -1825,7 +2143,18 @@ function renderFinalizadas(){
         <div class="task-info"><div class="task-name">${t.name} — ${t.client}</div><div class="task-meta">${t.material} · ${t.weight}g · Entregue ${t.deliveredAt}</div></div>
         <span class="task-deadline ok" style="margin-right:8px">${fmt(t.valor||0)}</span>
         <span class="task-deadline ok">ENTREGUE</span>
+        <button class="btn btn-danger" style="padding:4px 9px;font-size:11px;margin-left:8px" onclick="removerFinalizada(${t.id})" title="Excluir do histórico">🗑️</button>
       </div>`).join('');
+}
+
+function removerFinalizada(id){
+  const t=finalizadas.find(x=>x.id===id);
+  if(!t)return;
+  if(!confirm('Excluir "'+t.name+'" do histórico de finalizadas?'))return;
+  finalizadas=finalizadas.filter(x=>x.id!==id);
+  renderFinalizadas();
+  salvarDB();
+  showToast('🗑️ "'+t.name+'" removida do histórico.','🗑️');
 }
 
 function addTask(){
@@ -1883,6 +2212,186 @@ function salvarProgresso(){
   salvarDB();
   closeModal('modal-progresso');
   showToast('📊 Progresso atualizado para '+t.progress+'%!');
+}
+
+// --- EDITAR / EXCLUIR TAREFA ---
+let editTarefaId=null;
+function abrirEdicaoTarefa(id){
+  const t=tasks.find(x=>x.id===id);
+  if(!t)return;
+  editTarefaId=id;
+  document.getElementById('et-name').value=t.name;
+  document.getElementById('et-client').value=t.client;
+  document.getElementById('et-date').value=t.deadline;
+  document.getElementById('et-material').value=t.material;
+  document.getElementById('et-weight').value=t.weight;
+  document.getElementById('et-valor').value=t.valor||0;
+  document.getElementById('et-obs').value=t.obs||'';
+  openModal('modal-editar-tarefa');
+}
+function salvarEdicaoTarefa(){
+  const t=tasks.find(x=>x.id===editTarefaId);
+  if(!t)return;
+  t.name=document.getElementById('et-name').value.trim()||t.name;
+  t.client=document.getElementById('et-client').value.trim()||t.client;
+  t.deadline=document.getElementById('et-date').value||t.deadline;
+  t.material=document.getElementById('et-material').value;
+  t.weight=parseInt(document.getElementById('et-weight').value)||t.weight;
+  t.valor=parseFloat(document.getElementById('et-valor').value)||0;
+  t.obs=document.getElementById('et-obs').value.trim();
+  renderTasks();
+  salvarDB();
+  closeModal('modal-editar-tarefa');
+  showToast('✅ Tarefa "'+t.name+'" atualizada!');
+}
+let excluirTarefaId=null;
+function confirmarExclusaoTarefa(id){
+  const t=tasks.find(x=>x.id===id);
+  if(!t)return;
+  excluirTarefaId=id;
+  document.getElementById('excluir-tarefa-nome').textContent=t.name;
+  openModal('modal-excluir-tarefa');
+}
+function excluirTarefaConfirmado(){
+  const t=tasks.find(x=>x.id===excluirTarefaId);
+  if(!t)return;
+  tasks=tasks.filter(x=>x.id!==excluirTarefaId);
+  renderTasks();
+  salvarDB();
+  closeModal('modal-excluir-tarefa');
+  showToast('🗑️ Tarefa "'+t.name+'" excluída.','🗑️');
+}
+
+// ===================== CLIENTES (FUNIL / KANBAN) =====================
+function renderClientes(){
+  const board=document.getElementById('kanban-board');
+  if(!board)return;
+  const badgeEl=document.getElementById('badge-clientes');
+  if(badgeEl)badgeEl.textContent=clientes.length;
+
+  board.innerHTML = CLIENTE_ESTAGIOS.map(estagio=>{
+    const lista = clientes.filter(c=>c.estagio===estagio);
+    const cardsHtml = lista.length===0
+      ? `<div style="text-align:center;padding:20px 8px;color:var(--text-muted);font-size:11px;font-family:'JetBrains Mono',monospace">Arraste um cliente para aqui</div>`
+      : lista.map(c=>`
+        <div class="kanban-card" draggable="true" id="cliente-card-${c.id}"
+             ondragstart="onClienteDragStart(event,${c.id})" ondragend="onClienteDragEnd(event)">
+          <div class="kanban-card-name">${c.nome}</div>
+          <div class="kanban-card-meta">${c.contato?c.contato:'Sem contato'}${c.origem?' · '+c.origem:''}</div>
+          ${c.valor?`<div class="kanban-card-valor">${fmt(c.valor)}</div>`:''}
+          ${c.obs?`<div class="kanban-card-meta" style="margin-bottom:8px">${c.obs}</div>`:''}
+          <div class="kanban-card-actions">
+            <button class="btn btn-ghost" onclick="abrirEdicaoCliente(${c.id})" title="Editar">✏️ Editar</button>
+            <button class="btn btn-danger" onclick="confirmarExclusaoCliente(${c.id})" title="Excluir">🗑️</button>
+          </div>
+        </div>`).join('');
+    return `
+    <div class="kanban-col">
+      <div class="kanban-col-header">${CLIENTE_ESTAGIO_ICON[estagio]} ${CLIENTE_ESTAGIO_LABEL[estagio]}<span class="kanban-col-count">${lista.length}</span></div>
+      <div class="kanban-col-body" id="kanban-col-${estagio}"
+           ondragover="onClienteDragOver(event)" ondragleave="onClienteDragLeave(event)" ondrop="onClienteDrop(event,'${estagio}')">
+        ${cardsHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let clienteDragId=null;
+function onClienteDragStart(ev,id){
+  clienteDragId=id;
+  ev.dataTransfer.effectAllowed='move';
+  ev.dataTransfer.setData('text/plain',String(id));
+  ev.target.classList.add('dragging');
+}
+function onClienteDragEnd(ev){
+  ev.target.classList.remove('dragging');
+  document.querySelectorAll('.kanban-col-body').forEach(el=>el.classList.remove('drag-over'));
+}
+function onClienteDragOver(ev){
+  ev.preventDefault();
+  ev.currentTarget.classList.add('drag-over');
+}
+function onClienteDragLeave(ev){
+  ev.currentTarget.classList.remove('drag-over');
+}
+function onClienteDrop(ev,estagio){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('drag-over');
+  const id=clienteDragId;
+  const c=clientes.find(x=>x.id===id);
+  if(!c)return;
+  const estagioAnterior=c.estagio;
+  c.estagio=estagio;
+  renderClientes();
+  salvarDB();
+  if(estagioAnterior!==estagio){
+    showToast(CLIENTE_ESTAGIO_ICON[estagio]+' "'+c.nome+'" movido para '+CLIENTE_ESTAGIO_LABEL[estagio]+'!');
+  }
+  clienteDragId=null;
+}
+
+let editClienteId=null;
+function abrirNovoCliente(){
+  editClienteId=null;
+  document.getElementById('cliente-modal-title').textContent='👤 Novo Cliente';
+  document.getElementById('cliente-modal-save-btn').textContent='👤 Salvar Cliente';
+  ['cli-nome','cli-contato','cli-valor','cli-origem','cli-obs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cli-estagio').value='contato';
+  openModal('modal-cliente');
+}
+function abrirEdicaoCliente(id){
+  const c=clientes.find(x=>x.id===id);
+  if(!c)return;
+  editClienteId=id;
+  document.getElementById('cliente-modal-title').textContent='✏️ Editar Cliente';
+  document.getElementById('cliente-modal-save-btn').textContent='✅ Salvar Alterações';
+  document.getElementById('cli-nome').value=c.nome;
+  document.getElementById('cli-contato').value=c.contato||'';
+  document.getElementById('cli-estagio').value=c.estagio;
+  document.getElementById('cli-valor').value=c.valor||'';
+  document.getElementById('cli-origem').value=c.origem||'';
+  document.getElementById('cli-obs').value=c.obs||'';
+  openModal('modal-cliente');
+}
+function salvarCliente(){
+  const nome=document.getElementById('cli-nome').value.trim();
+  if(!nome){showToast('⚠️ Informe o nome do cliente!','⚠️');return;}
+  const contato=document.getElementById('cli-contato').value.trim();
+  const estagio=document.getElementById('cli-estagio').value;
+  const valor=parseFloat(document.getElementById('cli-valor').value)||0;
+  const origem=document.getElementById('cli-origem').value.trim();
+  const obs=document.getElementById('cli-obs').value.trim();
+
+  if(editClienteId){
+    const c=clientes.find(x=>x.id===editClienteId);
+    if(c){
+      c.nome=nome;c.contato=contato;c.estagio=estagio;c.valor=valor;c.origem=origem;c.obs=obs;
+      showToast('✅ "'+nome+'" atualizado!');
+    }
+  } else {
+    clientes.push({id:nextClienteId++,nome,contato,estagio,valor,origem,obs});
+    showToast('👤 "'+nome+'" adicionado ao funil!');
+  }
+  renderClientes();
+  salvarDB();
+  closeModal('modal-cliente');
+}
+let excluirClienteId=null;
+function confirmarExclusaoCliente(id){
+  const c=clientes.find(x=>x.id===id);
+  if(!c)return;
+  excluirClienteId=id;
+  document.getElementById('excluir-cli-nome').textContent=c.nome;
+  openModal('modal-excluir-cliente');
+}
+function excluirClienteConfirmado(){
+  const c=clientes.find(x=>x.id===excluirClienteId);
+  if(!c)return;
+  clientes=clientes.filter(x=>x.id!==excluirClienteId);
+  renderClientes();
+  salvarDB();
+  closeModal('modal-excluir-cliente');
+  showToast('🗑️ "'+c.nome+'" removido do funil.','🗑️');
 }
 
 // ===================== ESTOQUE =====================
@@ -2121,7 +2630,8 @@ function renderFinanceiro(){
         <div class="tx-icon ${cls}">${icon}</div>
         <div style="flex:1"><div style="font-size:13px;font-weight:600">${t.desc}</div><div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${d} · ${t.cat}</div></div>
         <div class="tx-amount ${valCls}">${signal}${fmt(t.valor)}</div>
-        <button class="btn btn-danger" style="padding:3px 7px;font-size:11px;margin-left:8px" onclick="removerTx(${t.id})">✕</button>
+        <button class="btn btn-ghost" style="padding:3px 7px;font-size:11px;margin-left:8px" onclick="abrirEdicaoTx(${t.id})" title="Editar">✏️</button>
+        <button class="btn btn-danger" style="padding:3px 7px;font-size:11px;margin-left:4px" onclick="removerTx(${t.id})" title="Excluir">✕</button>
       </div>`;
     }).join('');
     return html;
@@ -2160,6 +2670,45 @@ function removerTx(id){
 function toggleTxTipo(el){
   document.getElementById('lbl-receita').style.borderColor=document.querySelector('input[value="entrada"]').checked?'var(--success)':'var(--border)';
   document.getElementById('lbl-despesa').style.borderColor=document.querySelector('input[value="saida"]').checked?'var(--danger)':'var(--border)';
+}
+
+// --- EDITAR TRANSAÇÃO ---
+let editTxId=null;
+function abrirEdicaoTx(id){
+  const t=transacoes.find(x=>x.id===id);
+  if(!t)return;
+  editTxId=id;
+  document.querySelector('input[name="et-tx-tipo"][value="'+t.tipo+'"]').checked=true;
+  toggleEtTxTipo();
+  document.getElementById('et-tx-desc').value=t.desc;
+  document.getElementById('et-tx-valor').value=t.valor;
+  document.getElementById('et-tx-data').value=t.data;
+  document.getElementById('et-tx-categoria').value=t.cat;
+  openModal('modal-editar-tx');
+}
+function toggleEtTxTipo(){
+  const checked=document.querySelector('input[name="et-tx-tipo"]:checked');
+  if(!checked)return;
+  document.getElementById('et-lbl-receita').style.borderColor=checked.value==='entrada'?'var(--success)':'var(--border)';
+  document.getElementById('et-lbl-despesa').style.borderColor=checked.value==='saida'?'var(--danger)':'var(--border)';
+}
+function salvarEdicaoTx(){
+  const t=transacoes.find(x=>x.id===editTxId);
+  if(!t)return;
+  const tipoEl=document.querySelector('input[name="et-tx-tipo"]:checked');
+  const desc=document.getElementById('et-tx-desc').value.trim();
+  const valor=parseFloat(document.getElementById('et-tx-valor').value)||0;
+  if(!desc){showToast('⚠️ Informe a descrição!','⚠️');return;}
+  if(valor<=0){showToast('⚠️ Informe um valor válido!','⚠️');return;}
+  t.tipo=tipoEl?tipoEl.value:t.tipo;
+  t.desc=desc;
+  t.valor=valor;
+  t.data=document.getElementById('et-tx-data').value||t.data;
+  t.cat=document.getElementById('et-tx-categoria').value;
+  renderFinanceiro();
+  salvarDB();
+  closeModal('modal-editar-tx');
+  showToast('✅ Lançamento atualizado!');
 }
 
 // ===================== ORÇAMENTO (novo sistema por itens) =====================
@@ -2687,6 +3236,7 @@ function renderCatalogo(){
       <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">Adicionado em ${p.criadoEm}</div>
       <div style="display:flex;gap:8px;margin-top:4px">
         <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:12px" onclick="usarPecaNoOrcamento(${p.id})">📋 Orçar</button>
+        <button class="btn btn-ghost" style="padding:7px 10px;font-size:13px" onclick="abrirEdicaoPeca(${p.id})" title="Editar">✏️</button>
         <button class="btn btn-danger" style="padding:7px 10px;font-size:13px" onclick="removerPeca(${p.id})" title="Excluir">🗑️</button>
       </div>
     </div>`;
@@ -2713,6 +3263,34 @@ function removerPeca(id){
   renderCatalogo();
   salvarDB();
   showToast('🗑️ "' + p.nome + '" removida do catálogo.','🗑️');
+}
+
+let editPecaId=null;
+function abrirEdicaoPeca(id){
+  const p=catalogo.find(x=>x.id===id);
+  if(!p)return;
+  editPecaId=id;
+  document.getElementById('ep-nome').value=p.nome;
+  document.getElementById('ep-horas').value=p.horas;
+  document.getElementById('ep-minutos').value=p.minutos;
+  document.getElementById('ep-peso').value=p.peso;
+  document.getElementById('ep-custo').value=p.custo;
+  document.getElementById('ep-filamento').value=p.filamento||'';
+  openModal('modal-editar-peca');
+}
+function salvarEdicaoPeca(){
+  const p=catalogo.find(x=>x.id===editPecaId);
+  if(!p)return;
+  p.nome=document.getElementById('ep-nome').value.trim()||p.nome;
+  p.horas=parseInt(document.getElementById('ep-horas').value)||0;
+  p.minutos=parseInt(document.getElementById('ep-minutos').value)||0;
+  p.peso=parseFloat(document.getElementById('ep-peso').value)||0;
+  p.custo=parseFloat(document.getElementById('ep-custo').value)||0;
+  p.filamento=document.getElementById('ep-filamento').value.trim();
+  renderCatalogo();
+  salvarDB();
+  closeModal('modal-editar-peca');
+  showToast('✅ "'+p.nome+'" atualizada!');
 }
 
 // ===================== TRILHAS COM PASSO A PASSO =====================
@@ -3054,6 +3632,7 @@ function renderPrompts(){
     <div style="display:flex;gap:8px;margin-top:8px">
       <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="verPrompt(${p.id})">👁️ Ver</button>
       <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="copiarPromptById(${p.id})">📋 Copiar</button>
+      <button class="btn btn-ghost" style="padding:8px 10px" onclick="abrirEdicaoPrompt(${p.id})" title="Editar">✏️</button>
       <button class="btn btn-danger" style="padding:8px 10px" onclick="removerPrompt(${p.id})">🗑️</button>
     </div>
   </div>`).join('')+`<div class="trilha-card" style="border-style:dashed;opacity:.5;cursor:pointer" onclick="openModal('modal-novo-prompt')">
@@ -3107,6 +3686,30 @@ function removerPrompt(id){
   showToast('🗑️ Prompt "'+p.nome+'" removido.','🗑️');
 }
 
+let editPromptId=null;
+function abrirEdicaoPrompt(id){
+  const p=prompts.find(x=>x.id===id);
+  if(!p)return;
+  editPromptId=id;
+  document.getElementById('epr-emoji').value=p.emoji;
+  document.getElementById('epr-nome').value=p.nome;
+  document.getElementById('epr-desc').value=p.desc;
+  document.getElementById('epr-texto').value=p.texto;
+  openModal('modal-editar-prompt');
+}
+function salvarEdicaoPrompt(){
+  const p=prompts.find(x=>x.id===editPromptId);
+  if(!p)return;
+  p.emoji=document.getElementById('epr-emoji').value||p.emoji;
+  p.nome=document.getElementById('epr-nome').value.trim()||p.nome;
+  p.desc=document.getElementById('epr-desc').value.trim();
+  p.texto=document.getElementById('epr-texto').value.trim()||p.texto;
+  renderPrompts();
+  salvarDB();
+  closeModal('modal-editar-prompt');
+  showToast('✅ Prompt "'+p.nome+'" atualizado!');
+}
+
 // ===================== LINKS =====================
 function renderLinks(){
   const el=document.getElementById('links-grid');
@@ -3114,6 +3717,7 @@ function renderLinks(){
     <div style="display:flex;align-items:center;gap:10px;width:100%">
       <div class="tx-icon" style="background:rgba(0,212,255,.1);font-size:20px">${l.emoji}</div>
       <div style="flex:1"><div style="font-size:14px;font-weight:700">${l.nome}</div><div style="font-size:11px;color:var(--text-muted)">${l.desc}</div></div>
+      <button class="btn btn-ghost" style="padding:4px 8px;font-size:11px" onclick="abrirEdicaoLink(${l.id})" title="Editar">✏️</button>
       <button class="btn btn-danger" style="padding:4px 8px;font-size:11px" onclick="removerLink(${l.id})">🗑️</button>
     </div>
     <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="abrirLink('${l.url}','${l.nome}')">Acessar ${l.nome} →</button>
@@ -3143,6 +3747,30 @@ function removerLink(id){
   renderLinks();
   salvarDB();
   showToast('🗑️ Link "'+l.nome+'" removido.','🗑️');
+}
+
+let editLinkId=null;
+function abrirEdicaoLink(id){
+  const l=links.find(x=>x.id===id);
+  if(!l)return;
+  editLinkId=id;
+  document.getElementById('elk-emoji').value=l.emoji;
+  document.getElementById('elk-nome').value=l.nome;
+  document.getElementById('elk-url').value=l.url;
+  document.getElementById('elk-desc').value=l.desc||'';
+  openModal('modal-editar-link');
+}
+function salvarEdicaoLink(){
+  const l=links.find(x=>x.id===editLinkId);
+  if(!l)return;
+  l.emoji=document.getElementById('elk-emoji').value||l.emoji;
+  l.nome=document.getElementById('elk-nome').value.trim()||l.nome;
+  l.url=document.getElementById('elk-url').value.trim()||l.url;
+  l.desc=document.getElementById('elk-desc').value.trim();
+  renderLinks();
+  salvarDB();
+  closeModal('modal-editar-link');
+  showToast('✅ Link "'+l.nome+'" atualizado!');
 }
 
 // ===================== GUIAS =====================
@@ -3342,9 +3970,9 @@ function renderImpressoras(){
 }
 
 function limparDados(){
-  if(!confirm('Tem certeza? Todos os dados serão apagados (tarefas, estoque, financeiro, impressoras e catálogo). Esta ação não pode ser desfeita.'))return;
-  tasks=[];finalizadas=[];estoque=[];transacoes=[];impressoras=[];catalogo=[];
-  renderTasks();renderEstoque();renderFinanceiro();renderImpressoras();renderCatalogo();
+  if(!confirm('Tem certeza? Todos os dados serão apagados (tarefas, estoque, financeiro, impressoras, catálogo e clientes). Esta ação não pode ser desfeita.'))return;
+  tasks=[];finalizadas=[];estoque=[];transacoes=[];impressoras=[];catalogo=[];clientes=[];
+  renderTasks();renderEstoque();renderFinanceiro();renderImpressoras();renderCatalogo();renderClientes();
   salvarDB();
   showToast('🗑️ Dados apagados.','🗑️');
 }
