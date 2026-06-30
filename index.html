@@ -2204,11 +2204,22 @@ function finishTask(id){
   finalizadas.unshift({...t,deliveredAt:now.toLocaleDateString('pt-BR')});
   tasks=tasks.filter(x=>x.id!==id);
   renderTasks();
+
+  // Se a tarefa veio de um pedido do funil, move o cliente automaticamente para "Entregue"
+  if(t.clienteId){
+    const c=clientes.find(x=>x.id===t.clienteId);
+    if(c && c.estagio!=='entregue'){
+      c.estagio='entregue';
+      renderClientes();
+      showToast('✅ Tarefa concluída! 📦 "'+c.nome+'" movido para Entregue no funil.');
+    }
+  }
+
   salvarDB();
 
   if(consumido){
     showToast('✅ Tarefa concluída! 📉 '+t.weight+'g de "'+t.material+'" descontados do estoque.');
-  } else {
+  } else if(!t.clienteId){
     showToast('✅ Tarefa "'+t.name+'" concluída! (Material não encontrado no estoque)');
   }
 }
@@ -2347,8 +2358,52 @@ function onClienteDrop(ev,estagio){
   salvarDB();
   if(estagioAnterior!==estagio){
     showToast(CLIENTE_ESTAGIO_ICON[estagio]+' "'+c.nome+'" movido para '+CLIENTE_ESTAGIO_LABEL[estagio]+'!');
+    if(estagio==='vendido' && estagioAnterior!=='vendido'){
+      criarPedidoAutomatico(c);
+    }
   }
   clienteDragId=null;
+}
+
+// Cria automaticamente a tarefa de produção + lançamento financeiro quando um cliente é marcado como "Vendido".
+function criarPedidoAutomatico(c){
+  if(c.pedidoCriado) return; // evita duplicar se o cliente for movido para frente/trás várias vezes
+  c.pedidoCriado=true;
+
+  const hoje=new Date().toISOString().slice(0,10);
+
+  // 1) Cria a tarefa de produção já vinculada ao cliente
+  const novaTarefa={
+    id:nextId++,
+    name:'Pedido — '+c.nome,
+    client:c.nome,
+    material:'PLA',
+    weight:50,
+    deadline:hoje,
+    valor:c.valor||0,
+    obs:c.obs||'',
+    progress:0,
+    clienteId:c.id
+  };
+  tasks.push(novaTarefa);
+  renderTasks();
+
+  // 2) Cria o lançamento financeiro de receita, já vinculado ao cliente
+  if(c.valor>0){
+    transacoes.unshift({
+      id:nextTxId++,
+      tipo:'entrada',
+      desc:'Pedido — '+c.nome,
+      valor:c.valor,
+      data:hoje,
+      cat:'Venda de peça',
+      clienteId:c.id
+    });
+    renderFinanceiro();
+  }
+
+  salvarDB();
+  showToast('🖨️ Tarefa e lançamento financeiro criados automaticamente para "'+c.nome+'"!');
 }
 
 let editClienteId=null;
