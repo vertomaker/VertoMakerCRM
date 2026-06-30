@@ -108,6 +108,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
 /* TASKS */
 .task-item{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);transition:background .2s;cursor:pointer;}
+.task-actions{display:flex;gap:4px;flex-shrink:0;}
 .task-item:last-child{border-bottom:none;}
 .task-status{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
 .task-status.running{background:rgba(0,212,255,.15);}
@@ -333,10 +334,14 @@ select.form-input option{background:var(--bg-card);}
   .btn-primary{ justify-content:center; }
 
   /* Tarefas */
-  .task-item{ gap:8px; padding:10px 0; flex-wrap:nowrap; }
+  .task-item{ flex-wrap:wrap; gap:8px; padding:12px 0; align-items:flex-start; }
+  .task-item .task-status{ flex-shrink:0; }
+  .task-item .task-info{ flex:1 1 calc(100% - 50px); min-width:0; }
   .task-name{ font-size:13px; }
   .task-meta{ font-size:11px; }
   .task-deadline{ font-size:10px; padding:3px 7px; flex-shrink:0; }
+  .task-item .task-actions{ width:100%; display:flex; gap:6px; margin-top:4px; padding-left:50px; box-sizing:border-box; }
+  .task-item .task-actions .btn{ flex:1; padding:8px 6px; font-size:13px; min-height:36px; justify-content:center; margin:0 !important; }
 
   /* Transações */
   .transaction-item{ padding:10px 12px; gap:8px; }
@@ -990,11 +995,11 @@ select.form-input option{background:var(--bg-card);}
           <label class="form-label">Etapa do Funil</label>
           <select class="form-input" id="cli-estagio">
             <option value="contato">📞 Contato</option>
-            <option value="agendado">📅 Agendado</option>
-            <option value="teste">🎧 Em Teste</option>
-            <option value="proposta">📋 Proposta</option>
-            <option value="vendido">✅ Vendido</option>
+            <option value="orcamento">📋 Orçamento</option>
+            <option value="producao">🖨️ Em Produção</option>
+            <option value="vendido">💰 Vendido</option>
             <option value="perdido">❌ Perdido</option>
+            <option value="entregue">✅ Entregue</option>
           </select>
         </div>
       </div>
@@ -1898,9 +1903,9 @@ let impressoras = [];
 
 let clientes = [];
 let nextClienteId = 1;
-const CLIENTE_ESTAGIOS = ['contato','agendado','teste','proposta','vendido','perdido'];
-const CLIENTE_ESTAGIO_LABEL = {contato:'Contato',agendado:'Agendado',teste:'Em Teste',proposta:'Proposta',vendido:'Vendido',perdido:'Perdido'};
-const CLIENTE_ESTAGIO_ICON = {contato:'📞',agendado:'📅',teste:'🎧',proposta:'📋',vendido:'✅',perdido:'❌'};
+const CLIENTE_ESTAGIOS = ['contato','orcamento','producao','vendido','perdido','entregue'];
+const CLIENTE_ESTAGIO_LABEL = {contato:'Contato',orcamento:'Orçamento',producao:'Em Produção',vendido:'Vendido',perdido:'Perdido',entregue:'Entregue'};
+const CLIENTE_ESTAGIO_ICON = {contato:'📞',orcamento:'📋',producao:'🖨️',vendido:'💰',perdido:'❌',entregue:'✅'};
 
 let config = {empresa:'Vertomaker',energia:0.80,mao:5,whats:'',watts:240};
 let calOffset = 0;
@@ -1969,6 +1974,11 @@ function aplicarDB(db){
   }
 
   clientes = Array.isArray(db.clientes) ? db.clientes : [];
+  const migracaoEstagio = {agendado:'orcamento', teste:'producao', proposta:'orcamento'};
+  clientes.forEach(c=>{
+    if(migracaoEstagio[c.estagio]) c.estagio = migracaoEstagio[c.estagio];
+    if(!CLIENTE_ESTAGIOS.includes(c.estagio)) c.estagio = 'contato';
+  });
   nextClienteId = db.nextClienteId || (Math.max(0,...clientes.map(c=>c.id||0))+1);
 
   config = (db.config && typeof db.config==='object') ? {...config, ...db.config} : config;
@@ -2098,11 +2108,12 @@ function renderTasks(){
     const daysLeft=Math.ceil((new Date(t.deadline)-new Date())/86400000);
     const urg=daysLeft<2?'urgent':daysLeft<5?'normal':'ok';
     const lbl=daysLeft<0?'ATRASADO':daysLeft===0?'HOJE':daysLeft+'d';
-    const actions = withActions ? `
-        <button class="btn btn-ghost" style="padding:4px 9px;font-size:11px;margin-left:6px" onclick="openProgresso(${t.id})" title="Atualizar progresso">📊</button>
-        <button class="btn btn-success" style="padding:4px 9px;font-size:11px;margin-left:4px" onclick="finishTask(${t.id})" title="Finalizar">✅</button>
-        <button class="btn btn-ghost" style="padding:4px 9px;font-size:11px;margin-left:4px" onclick="abrirEdicaoTarefa(${t.id})" title="Editar">✏️</button>
-        <button class="btn btn-danger" style="padding:4px 9px;font-size:11px;margin-left:4px" onclick="confirmarExclusaoTarefa(${t.id})" title="Excluir">🗑️</button>` : '';
+    const actions = withActions ? `<div class="task-actions">
+        <button class="btn btn-ghost" onclick="openProgresso(${t.id})" title="Atualizar progresso">📊</button>
+        <button class="btn btn-success" onclick="finishTask(${t.id})" title="Finalizar">✅</button>
+        <button class="btn btn-ghost" onclick="abrirEdicaoTarefa(${t.id})" title="Editar">✏️</button>
+        <button class="btn btn-danger" onclick="confirmarExclusaoTarefa(${t.id})" title="Excluir">🗑️</button>
+      </div>` : '';
     return`<div class="task-item">
         <div class="task-status running">🔄</div>
         <div class="task-info">
@@ -2110,7 +2121,8 @@ function renderTasks(){
           <div class="task-meta">${t.material} · ${t.weight}g · ${t.progress}% concluído${t.obs?' · '+t.obs:''}</div>
           <div class="print-progress" style="margin-top:6px;width:160px"><div class="print-progress-bar" style="width:${t.progress}%"></div></div>
         </div>
-        <span class="task-deadline ${urg}">${lbl}</span>${actions}
+        <span class="task-deadline ${urg}">${lbl}</span>
+        ${actions}
       </div>`;
   }
 
@@ -2143,7 +2155,9 @@ function renderFinalizadas(){
         <div class="task-info"><div class="task-name">${t.name} — ${t.client}</div><div class="task-meta">${t.material} · ${t.weight}g · Entregue ${t.deliveredAt}</div></div>
         <span class="task-deadline ok" style="margin-right:8px">${fmt(t.valor||0)}</span>
         <span class="task-deadline ok">ENTREGUE</span>
-        <button class="btn btn-danger" style="padding:4px 9px;font-size:11px;margin-left:8px" onclick="removerFinalizada(${t.id})" title="Excluir do histórico">🗑️</button>
+        <div class="task-actions">
+          <button class="btn btn-danger" onclick="removerFinalizada(${t.id})" title="Excluir do histórico">🗑️</button>
+        </div>
       </div>`).join('');
 }
 
