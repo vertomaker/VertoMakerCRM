@@ -16,6 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
   --bg-primary:#080c12;--bg-secondary:#0d1520;--bg-card:#111927;--bg-card-hover:#162135;
@@ -438,9 +439,9 @@ select.form-input option{background:var(--bg-card);}
         <div class="form-group">
           <label class="form-label">Material</label>
           <select class="form-input" id="nt-material">
-            <option>PLA Basic</option><option>PLA Silk</option>
-            <option>PETG</option><option>ABS</option>
-            <option>TPU Flexível</option><option>Resina Standard</option>
+            <option>PLA Branco</option><option>PLA Preto</option>
+            <option>PETG Transparente</option><option>ABS Cinza</option>
+            <option>Resina Standard</option><option>TPU Flexível</option>
           </select>
         </div>
         <div class="form-group">
@@ -1292,13 +1293,12 @@ select.form-input option{background:var(--bg-card);}
     <div class="nav-item" id="nav-instalar-item" style="display:none" onclick="instalarApp()"><div class="nav-icon">📲</div><span>Instalar App</span></div>
   </div>
   <div class="sidebar-footer">
-    <div class="user-info" style="cursor:pointer" onclick="navigateTo('configuracoes', document.querySelector('[onclick*=configuracoes]'))" title="Configurações">
+    <div class="user-info">
       <div class="user-avatar" id="sidebar-avatar">V</div>
       <div style="flex:1;min-width:0">
         <div class="user-name" id="sidebar-empresa-nome">Vertomaker</div>
         <div class="user-role" id="sidebar-plano-label">USO LIVRE · DADOS LOCAIS</div>
       </div>
-      <span style="font-size:14px;color:var(--text-muted)" title="Configurações">⚙️</span>
     </div>
   </div>
 </nav>
@@ -1411,6 +1411,33 @@ select.form-input option{background:var(--bg-card);}
       <div class="stat-card"><div class="stat-label">Tarefas Ativas</div><div class="stat-value" style="color:var(--warning)" id="stat-ativas">2</div><div class="stat-sub">🔄 Em produção</div></div>
       <div class="stat-card"><div class="stat-label">Concluídas</div><div class="stat-value" style="color:var(--success)" id="stat-conc">5</div><div class="stat-sub">✅ Entregues</div></div>
     </div>
+
+    <!-- DASHBOARD FINANCEIRO -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header" style="flex-wrap:wrap;gap:10px">
+        <div class="card-title">📊 Dashboard Financeiro</div>
+        <select class="form-input" id="dash-fin-periodo" style="width:auto;padding:8px 12px;font-size:12px" onchange="renderDashboardFinanceiro()">
+          <option value="3">Últimos 3 meses</option>
+          <option value="6" selected>Últimos 6 meses</option>
+          <option value="12">Últimos 12 meses</option>
+          <option value="0">Tudo</option>
+        </select>
+      </div>
+      <div class="card-body">
+        <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:18px">
+          <div class="stat-card"><div class="stat-label">Ticket Médio</div><div class="stat-value" style="color:var(--accent);font-size:20px" id="dash-fin-ticket">R$0</div><div class="stat-sub">💰 Por venda</div></div>
+          <div class="stat-card"><div class="stat-label">Maior Despesa</div><div class="stat-value" style="color:var(--danger);font-size:20px" id="dash-fin-maior-desp">—</div><div class="stat-sub">📤 Categoria</div></div>
+          <div class="stat-card"><div class="stat-label">Margem Média</div><div class="stat-value" style="color:var(--accent2);font-size:20px" id="dash-fin-margem">0%</div><div class="stat-sub">📊 No período</div></div>
+          <div class="stat-card"><div class="stat-label">Nº de Vendas</div><div class="stat-value" style="color:var(--success);font-size:20px" id="dash-fin-vendas">0</div><div class="stat-sub">🧾 No período</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:start">
+          <div style="position:relative;height:260px"><canvas id="chart-fin-tendencia"></canvas></div>
+          <div style="position:relative;height:260px"><canvas id="chart-fin-despesas-cat"></canvas></div>
+        </div>
+        <div id="dash-fin-empty" style="display:none" class="empty-state"><div class="empty-state-icon">📉</div><div class="empty-state-text">Sem lançamentos financeiros suficientes no período selecionado.</div></div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-header"><div class="card-title">💳 Últimas Transações</div></div>
       <div class="card-body" id="stat-tx-list" style="padding:0 20px"></div>
@@ -1857,7 +1884,8 @@ select.form-input option{background:var(--bg-card);}
           <div style="font-size:13px;color:var(--text-secondary);line-height:1.7">
             🔜 App mobile (Android / iOS)<br>
             🔜 Notificações de prazo por WhatsApp<br>
-            🔜 Relatórios mensais em PDF
+            🔜 Relatórios mensais em PDF<br>
+            🔜 Integração com Mercado Livre e Shopee
           </div>
         </div>
       </div>
@@ -2099,6 +2127,7 @@ function navigateTo(pageId,el){
   }
   if(pageId==='clientes')renderClientes();
   if(pageId==='configuracoes')atualizarUsoArmazenamento();
+  if(pageId==='estatisticas')renderDashboardFinanceiro();
   closeSidebar();
 }
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
@@ -2717,6 +2746,113 @@ function renderFinanceiro(){
   // Stats page tx list
   const stEl=document.getElementById('stat-tx-list');
   if(stEl)stEl.innerHTML=listHtml;
+}
+
+// ===================== DASHBOARD FINANCEIRO (gráficos) =====================
+let chartFinTendencia=null;
+let chartFinDespesasCat=null;
+
+function renderDashboardFinanceiro(){
+  const canvasTend=document.getElementById('chart-fin-tendencia');
+  const canvasCat=document.getElementById('chart-fin-despesas-cat');
+  if(!canvasTend||!canvasCat||typeof Chart==='undefined')return;
+
+  const periodoSel=document.getElementById('dash-fin-periodo');
+  const meses=periodoSel?parseInt(periodoSel.value):6;
+
+  // Filtra transações pelo período (em meses); 0 = tudo
+  let txFiltradas=transacoes;
+  if(meses>0){
+    const limite=new Date();
+    limite.setMonth(limite.getMonth()-meses);
+    limite.setDate(1);
+    txFiltradas=transacoes.filter(t=>t.data && new Date(t.data)>=limite);
+  }
+
+  const emptyEl=document.getElementById('dash-fin-empty');
+  if(emptyEl)emptyEl.style.display = txFiltradas.length===0 ? 'block' : 'none';
+
+  // --- Métricas resumo do período ---
+  const vendas=txFiltradas.filter(t=>t.tipo==='entrada');
+  const despesasPeriodo=txFiltradas.filter(t=>t.tipo==='saida');
+  const receitaPeriodo=vendas.reduce((s,t)=>s+t.valor,0);
+  const despesaPeriodo=despesasPeriodo.reduce((s,t)=>s+t.valor,0);
+  const ticketMedio=vendas.length>0?receitaPeriodo/vendas.length:0;
+  const margemMedia=receitaPeriodo>0?Math.round((receitaPeriodo-despesaPeriodo)/receitaPeriodo*100):0;
+
+  const catTotais={};
+  despesasPeriodo.forEach(t=>{catTotais[t.cat||'Outro']=(catTotais[t.cat||'Outro']||0)+t.valor;});
+  let maiorCat='—', maiorVal=0;
+  Object.entries(catTotais).forEach(([cat,val])=>{if(val>maiorVal){maiorVal=val;maiorCat=cat;}});
+
+  const elTicket=document.getElementById('dash-fin-ticket');
+  const elMaiorDesp=document.getElementById('dash-fin-maior-desp');
+  const elMargem=document.getElementById('dash-fin-margem');
+  const elVendas=document.getElementById('dash-fin-vendas');
+  if(elTicket)elTicket.textContent=fmt(ticketMedio);
+  if(elMaiorDesp)elMaiorDesp.textContent=maiorCat;
+  if(elMargem)elMargem.textContent=margemMedia+'%';
+  if(elVendas)elVendas.textContent=vendas.length;
+
+  // --- Gráfico 1: tendência mensal (receita x despesa) ---
+  const numMeses=meses>0?meses:12;
+  const labels=[];
+  const receitasPorMes=[];
+  const despesasPorMes=[];
+  const hoje=new Date();
+  for(let i=numMeses-1;i>=0;i--){
+    const d=new Date(hoje.getFullYear(),hoje.getMonth()-i,1);
+    const chave=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    labels.push(d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}));
+    const doMes=transacoes.filter(t=>t.data && t.data.slice(0,7)===chave);
+    receitasPorMes.push(doMes.filter(t=>t.tipo==='entrada').reduce((s,t)=>s+t.valor,0));
+    despesasPorMes.push(doMes.filter(t=>t.tipo==='saida').reduce((s,t)=>s+t.valor,0));
+  }
+
+  if(chartFinTendencia)chartFinTendencia.destroy();
+  chartFinTendencia=new Chart(canvasTend,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Receita',data:receitasPorMes,backgroundColor:'rgba(0,255,136,.7)',borderRadius:4},
+        {label:'Despesa',data:despesasPorMes,backgroundColor:'rgba(255,51,85,.7)',borderRadius:4},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#e8f4f8',font:{size:11}}},title:{display:true,text:'Receita x Despesa por mês',color:'#e8f4f8',font:{size:13}}},
+      scales:{
+        x:{ticks:{color:'#6a8fa8',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},
+        y:{ticks:{color:'#6a8fa8',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}}
+      }
+    }
+  });
+
+  // --- Gráfico 2: despesas por categoria (doughnut) ---
+  const catLabels=Object.keys(catTotais);
+  const catValores=Object.values(catTotais);
+  const paleta=['#ff3355','#ff6b35','#ffcc00','#7fff00','#00d4ff','#a06bff','#ff8fc7'];
+
+  if(chartFinDespesasCat)chartFinDespesasCat.destroy();
+  chartFinDespesasCat=new Chart(canvasCat,{
+    type:'doughnut',
+    data:{
+      labels: catLabels.length?catLabels:['Sem dados'],
+      datasets:[{
+        data: catValores.length?catValores:[1],
+        backgroundColor: catLabels.length?paleta.slice(0,catLabels.length):['#1a2e45'],
+        borderColor:'#0d1520',borderWidth:2
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#e8f4f8',font:{size:10},boxWidth:12}},
+        title:{display:true,text:'Despesas por categoria',color:'#e8f4f8',font:{size:13}}
+      }
+    }
+  });
 }
 
 function addTransacao(){
@@ -4054,7 +4190,15 @@ function renderImpressoras(){
   if(!list) return;
   list.innerHTML = impressoras.length===0
     ? 'Nenhuma impressora cadastrada ainda.'
-    : impressoras.map(i=>`<div class="task-item"><div class="task-status running">🖨️</div><div class="task-info"><div class="task-name">${i.nome}</div><div class="task-meta">${i.tech} · ${i.volume}mm${i.watts?' · '+i.watts+'W':''}</div></div><span class="badge badge-ok">ATIVA</span></div>`).join('');
+    : impressoras.map((i,idx)=>`<div class="task-item"><div class="task-status running">🖨️</div><div class="task-info"><div class="task-name">${i.nome}</div><div class="task-meta">${i.tech} · ${i.volume}mm${i.watts?' · '+i.watts+'W':''}</div></div><span class="badge badge-ok">ATIVA</span><button class="btn btn-ghost" style="padding:6px 10px;margin-left:8px" title="Excluir impressora" onclick="excluirImpressora(${idx})">🗑️</button></div>`).join('');
+}
+
+function excluirImpressora(idx){
+  if(!confirm('Tem certeza que deseja excluir esta impressora?'))return;
+  impressoras.splice(idx,1);
+  renderImpressoras();
+  salvarDB();
+  showToast('🗑️ Impressora excluída!','✅');
 }
 
 function limparDados(){
