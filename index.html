@@ -820,13 +820,13 @@ select.form-input option{background:var(--bg-card);}
   </div>
 </div>
 
-<!-- Modal: Selecionar do Estoque para Orçamento -->
-<div class="modal-overlay" id="modal-estoque-sel">
+<!-- Modal: Selecionar do Catálogo para Orçamento -->
+<div class="modal-overlay" id="modal-catalogo-sel">
   <div class="modal">
-    <div class="modal-title">📦 Importar do Estoque</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Clique no material para adicioná-lo como item do orçamento.</div>
-    <div id="estoque-sel-lista" style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:8px"></div>
-    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-estoque-sel')">Fechar</button></div>
+    <div class="modal-title">📚 Importar do Catálogo</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Clique na peça para adicioná-la como item do orçamento.</div>
+    <div id="catalogo-sel-lista" style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:8px"></div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-catalogo-sel')">Fechar</button></div>
   </div>
 </div>
 
@@ -1272,6 +1272,7 @@ select.form-input option{background:var(--bg-card);}
     <div class="nav-item" onclick="navigateTo('estoque',this)"><div class="nav-icon">📦</div>Estoque</div>
     <div class="nav-item" onclick="navigateTo('financeiro',this)"><div class="nav-icon">💰</div>Gestão Financeira</div>
     <div class="nav-item" onclick="navigateTo('orcamento',this)"><div class="nav-icon">📋</div>Gerador de Orçamento</div>
+    <div class="nav-item" onclick="navigateTo('historico-orcamentos',this)"><div class="nav-icon">🗂️</div>Histórico de Orçamentos<span class="nav-badge" id="badge-historico-orc">0</span></div>
   </div>
   <div class="sidebar-section">
     <div class="sidebar-section-label">Ensino</div>
@@ -1563,12 +1564,15 @@ select.form-input option{background:var(--bg-card);}
           </select>
         </div></div>
 
+        <!-- Alerta de estoque baixo -->
+        <div id="orc-alerta-estoque" style="display:none;background:rgba(255,51,85,.08);border:1px solid rgba(255,51,85,.3);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--text-secondary);line-height:1.6"></div>
+
         <!-- Itens -->
         <div class="card"><div class="card-body">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
             <div class="form-label">ITENS DO ORÇAMENTO</div>
             <div style="display:flex;gap:8px">
-              <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px" onclick="importarDoEstoque()">📦 Importar do Estoque</button>
+              <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px" onclick="importarDoCatalogo()">📚 Importar do Catálogo</button>
               <button class="btn btn-primary" style="padding:7px 12px;font-size:12px" onclick="adicionarItem()">+ Adicionar item</button>
             </div>
           </div>
@@ -1632,12 +1636,19 @@ select.form-input option{background:var(--bg-card);}
         <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="salvarComoReceita()">
           💰 Salvar como Receita
         </button>
+        <button class="btn btn-ghost" style="width:100%;justify-content:center;background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.3);color:var(--accent)" onclick="salvarOrcamentoHistorico()">
+          🗂️ Salvar no Histórico
+        </button>
       </div>
 
     </div><!-- fim grid -->
   </div>
 
-  <!-- CALCULADORA 3D -->
+  <!-- HISTÓRICO DE ORÇAMENTOS -->
+  <div class="page" id="page-historico-orcamentos">
+    <div class="section-header"><div><div class="section-title">🗂️ Histórico de Orçamentos</div><div class="section-sub">ACOMPANHE, REABRA E CONVERTA ORÇAMENTOS</div></div></div>
+    <div id="historico-orc-lista" style="display:flex;flex-direction:column;gap:12px"></div>
+  </div>
   <div class="page" id="page-calculadora3d">
     <div class="section-header">
       <div><div class="section-title">🧮 Calculadora 3D</div><div class="section-sub">CUSTO REAL DA PEÇA — DADOS DO FATIADOR</div></div>
@@ -1956,6 +1967,7 @@ function coletarDB(){
     catalogo, nextPecaId,
     clientes, nextClienteId,
     config, calOffset,
+    orcamentosSalvos, nextOrcSalvoId,
   };
 }
 
@@ -2016,6 +2028,10 @@ function aplicarDB(db){
 
   config = (db.config && typeof db.config==='object') ? {...config, ...db.config} : config;
   calOffset = typeof db.calOffset === 'number' ? db.calOffset : 0;
+
+  orcamentosSalvos = Array.isArray(db.orcamentosSalvos) ? db.orcamentosSalvos : [];
+  nextOrcSalvoId = db.nextOrcSalvoId || (Math.max(0,...orcamentosSalvos.map(o=>o.id||0))+1);
+
   return true;
 }
 
@@ -2102,6 +2118,7 @@ const pageTitles={
   'estoque':['Estoque','Gestão / Estoque'],
   'financeiro':['Gestão Financeira','Gestão / Financeiro'],
   'orcamento':['Gerador de Orçamento','Gestão / Orçamento'],
+  'historico-orcamentos':['Histórico de Orçamentos','Gestão / Histórico de Orçamentos'],
   'trilhas':['Trilhas','Ensino / Trilhas'],
   'guias':['Guias','Ensino / Guias'],
   'calculadora3d':['Calculadora 3D','Ferramentas / Calculadora'],
@@ -2128,6 +2145,8 @@ function navigateTo(pageId,el){
   if(pageId==='clientes')renderClientes();
   if(pageId==='configuracoes')atualizarUsoArmazenamento();
   if(pageId==='estatisticas')renderDashboardFinanceiro();
+  if(pageId==='orcamento')renderAlertaEstoqueOrcamento();
+  if(pageId==='historico-orcamentos')renderHistoricoOrcamentos();
   closeSidebar();
 }
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
@@ -2926,6 +2945,8 @@ function salvarEdicaoTx(){
 let orcItens = [];
 let nextOrcItemId = 1;
 let orcLogoDataUrl = null;
+let orcamentosSalvos = [];
+let nextOrcSalvoId = 1;
 
 function carregarLogo(input){
   const file=input.files[0];
@@ -2954,22 +2975,27 @@ function adicionarItem(nome='',qtd=1,desc='',preco=0){
   renderItens();
 }
 
-function importarDoEstoque(){
-  if(estoque.length===0){showToast('⚠️ Estoque vazio. Adicione itens primeiro!','⚠️');return;}
-  // Cria modal de seleção rápida
-  const opts=estoque.map(e=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background=''" onclick="adicionarItemEstoque(${e.id});closeModal('modal-estoque-sel')">
-    <div><div style="font-size:13px;font-weight:600">${e.nome}</div><div style="font-size:11px;color:var(--text-muted)">${e.tipo} · R$${e.custo.toFixed(2)}/g</div></div>
-    <span class="badge ${e.atual/e.total*100<=e.alerta?'badge-critical':'badge-ok'}">${e.atual}/${e.total}</span>
+function importarDoCatalogo(){
+  if(catalogo.length===0){showToast('⚠️ Catálogo vazio. Salve peças no Catálogo primeiro!','⚠️');return;}
+  // Cria modal de seleção rápida com as peças já cadastradas no catálogo
+  const opts=catalogo.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background=''" onclick="adicionarItemCatalogo(${p.id});closeModal('modal-catalogo-sel')">
+    <div><div style="font-size:13px;font-weight:600">${p.nome}</div><div style="font-size:11px;color:var(--text-muted)">${p.peso}g · ${p.horas}h${String(p.minutos).padStart(2,'0')}min${p.filamento?' · '+p.filamento:''}</div></div>
+    <span class="badge badge-ok">${fmt(p.custo)}</span>
   </div>`).join('');
-  document.getElementById('estoque-sel-lista').innerHTML=opts;
-  openModal('modal-estoque-sel');
+  document.getElementById('catalogo-sel-lista').innerHTML=opts;
+  openModal('modal-catalogo-sel');
 }
 
-function adicionarItemEstoque(id){
-  const e=estoque.find(x=>x.id===id);
-  if(!e)return;
-  adicionarItem(e.nome,1,e.tipo,parseFloat((e.custo*100).toFixed(2)));
-  showToast('📦 "'+e.nome+'" adicionado ao orçamento!');
+function adicionarItemCatalogo(id){
+  const p=catalogo.find(x=>x.id===id);
+  if(!p)return;
+  adicionarItem(p.nome + ' (' + p.peso + 'g)', 1, p.filamento||'Impressão 3D', parseFloat(p.custo.toFixed(2)));
+  const matEstoque = p.filamento ? estoque.find(e=>e.nome===p.filamento) : null;
+  if(matEstoque && matEstoque.total>0 && (matEstoque.atual/matEstoque.total*100)<=matEstoque.alerta){
+    showToast('⚠️ "'+p.nome+'" adicionada, mas o estoque de '+matEstoque.nome+' está baixo ('+matEstoque.atual+'g)!','⚠️');
+  } else {
+    showToast('📚 "'+p.nome+'" adicionada ao orçamento!');
+  }
 }
 
 function renderItens(){
@@ -3244,6 +3270,186 @@ function salvarComoReceita(){
   renderFinanceiro();
   salvarDB();
   showToast('💰 '+fmt(o.total)+' salvo como receita!');
+}
+
+// ===================== HISTÓRICO DE ORÇAMENTOS =====================
+const ORC_STATUS_LABEL={pendente:'⏳ Pendente',aprovado:'✅ Aprovado',recusado:'❌ Recusado'};
+const ORC_STATUS_CLASS={pendente:'badge-low',aprovado:'badge-ok',recusado:'badge-critical'};
+
+function salvarOrcamentoHistorico(){
+  if(orcItens.length===0){showToast('⚠️ Adicione ao menos um item ao orçamento!','⚠️');return;}
+  const o=calcOrcamento();
+  const registro={
+    id: nextOrcSalvoId++,
+    numero: document.getElementById('orc-numero').value,
+    empresa: document.getElementById('orc-empresa').value||'Vertomaker',
+    telVendedor: document.getElementById('orc-tel-vendedor').value,
+    cliente: document.getElementById('orc-cliente').value||'Cliente',
+    whatsCliente: document.getElementById('orc-whats-cliente').value,
+    prazo: document.getElementById('orc-prazo').value,
+    validade: document.getElementById('orc-validade').value||'7',
+    obs: document.getElementById('orc-obs').value,
+    itens: JSON.parse(JSON.stringify(orcItens)),
+    descTipo: document.getElementById('orc-desc-tipo').value,
+    descValor: parseFloat(document.getElementById('orc-desc-valor').value)||0,
+    logoDataUrl: orcLogoDataUrl,
+    subtotal:o.subtotal, descAmt:o.descAmt, total:o.total,
+    status:'pendente',
+    tarefaId:null,
+    criadoEm: new Date().toISOString().slice(0,10),
+  };
+  orcamentosSalvos.unshift(registro);
+  renderHistoricoOrcamentos();
+  salvarDB();
+  showToast('🗂️ Orçamento salvo no histórico!');
+}
+
+function renderHistoricoOrcamentos(){
+  const el=document.getElementById('historico-orc-lista');
+  const badge=document.getElementById('badge-historico-orc');
+  if(badge)badge.textContent=orcamentosSalvos.filter(o=>o.status==='pendente').length;
+  if(!el)return;
+  if(orcamentosSalvos.length===0){
+    el.innerHTML=`<div class="empty-state"><div class="empty-state-icon">🗂️</div><div class="empty-state-text">Nenhum orçamento salvo ainda.<br>Monte um orçamento e clique em "🗂️ Salvar no Histórico".</div></div>`;
+    return;
+  }
+  el.innerHTML=orcamentosSalvos.map(o=>{
+    const dataFmt=o.criadoEm?new Date(o.criadoEm+'T00:00:00').toLocaleDateString('pt-BR'):'';
+    return `<div class="card">
+      <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+          <div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700">${o.cliente}${o.numero?' — Nº '+o.numero:''}</div>
+            <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${dataFmt} · ${o.itens.length} ${o.itens.length===1?'item':'itens'}</div>
+          </div>
+          <span class="badge ${ORC_STATUS_CLASS[o.status]||'badge-low'}">${ORC_STATUS_LABEL[o.status]||o.status}</span>
+        </div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--accent)">${fmt(o.total)}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-ghost" style="font-size:12px;padding:7px 12px" onclick="reabrirOrcamentoHistorico(${o.id})">📂 Reabrir / Reenviar</button>
+          ${o.status!=='aprovado'?`<button class="btn btn-ghost" style="font-size:12px;padding:7px 12px;color:var(--success);border-color:rgba(0,255,136,.3)" onclick="mudarStatusOrcamento(${o.id},'aprovado')">✅ Aprovar</button>`:''}
+          ${o.status!=='recusado'?`<button class="btn btn-ghost" style="font-size:12px;padding:7px 12px;color:var(--danger);border-color:rgba(255,51,85,.3)" onclick="mudarStatusOrcamento(${o.id},'recusado')">❌ Recusar</button>`:''}
+          ${o.status==='aprovado' && !o.tarefaId?`<button class="btn btn-primary" style="font-size:12px;padding:7px 12px" onclick="converterOrcamentoEmTarefa(${o.id})">🖨️ Converter em Tarefa</button>`:''}
+          ${o.tarefaId?`<span class="badge badge-ok" style="font-size:11px">🖨️ Já convertido em tarefa</span>`:''}
+          <button class="btn btn-danger" style="font-size:12px;padding:7px 12px;margin-left:auto" onclick="excluirOrcamentoHistorico(${o.id})" title="Excluir">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function reabrirOrcamentoHistorico(id){
+  const o=orcamentosSalvos.find(x=>x.id===id);
+  if(!o)return;
+  document.getElementById('orc-numero').value=o.numero||'';
+  document.getElementById('orc-empresa').value=o.empresa||'Vertomaker';
+  document.getElementById('orc-tel-vendedor').value=o.telVendedor||'';
+  document.getElementById('orc-cliente').value=o.cliente||'';
+  document.getElementById('orc-whats-cliente').value=o.whatsCliente||'';
+  document.getElementById('orc-prazo').value=o.prazo||'';
+  document.getElementById('orc-validade').value=o.validade||'7';
+  document.getElementById('orc-obs').value=o.obs||'';
+  document.getElementById('orc-desc-tipo').value=o.descTipo||'pct';
+  document.getElementById('orc-desc-valor').value=o.descValor||0;
+  orcLogoDataUrl=o.logoDataUrl||null;
+  const prev=document.getElementById('orc-logo-preview');
+  prev.innerHTML = orcLogoDataUrl
+    ? `<img src="${orcLogoDataUrl}" style="width:100%;height:100%;object-fit:contain;border-radius:8px">`
+    : `<span style="font-size:24px;opacity:.4">🖼️</span><span style="font-size:10px;color:var(--text-muted);margin-top:4px">Adicionar</span>`;
+  orcItens=JSON.parse(JSON.stringify(o.itens));
+  nextOrcItemId=Math.max(0,...orcItens.map(i=>i.id||0))+1;
+  renderItens();
+  navigateTo('orcamento',null);
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.textContent.includes('Gerador de Orçamento')) n.classList.add('active');
+    else n.classList.remove('active');
+  });
+  showToast('📂 Orçamento de "'+o.cliente+'" reaberto! Ajuste se precisar e reenvie.');
+}
+
+function mudarStatusOrcamento(id,status){
+  const o=orcamentosSalvos.find(x=>x.id===id);
+  if(!o)return;
+  o.status=status;
+  renderHistoricoOrcamentos();
+  salvarDB();
+  showToast(status==='aprovado'?'✅ Orçamento marcado como aprovado!':'❌ Orçamento marcado como recusado.');
+}
+
+// Converte um orçamento aprovado em tarefa de produção + lançamento financeiro (mesmo padrão do funil de clientes).
+function converterOrcamentoEmTarefa(id){
+  const o=orcamentosSalvos.find(x=>x.id===id);
+  if(!o)return;
+  if(o.tarefaId){showToast('⚠️ Este orçamento já foi convertido em tarefa!','⚠️');return;}
+
+  const hoje=new Date().toISOString().slice(0,10);
+
+  // Tenta descobrir o peso total a partir dos nomes dos itens (quando vieram do Catálogo, o nome traz "(NNNg)")
+  let pesoTotal=0;
+  o.itens.forEach(i=>{
+    const m=(i.nome||'').match(/\((\d+)\s*g\)/i);
+    if(m) pesoTotal += (parseInt(m[1])||0) * (i.qtd||1);
+  });
+  const materialGuess = o.itens.map(i=>i.desc).find(d=>d && d!=='Impressão 3D' && d!=='Calculadora 3D') || 'PLA';
+  const diasPrazo=(()=>{ const m=(o.prazo||'').match(/(\d+)/); return m?parseInt(m[1]):7; })();
+  const deadline=new Date(Date.now()+diasPrazo*86400000).toISOString().slice(0,10);
+
+  const novaTarefa={
+    id:nextId++,
+    name:'Orçamento'+(o.numero?' '+o.numero:'')+' — '+o.cliente,
+    client:o.cliente,
+    material:materialGuess,
+    weight:pesoTotal||50,
+    deadline,
+    valor:o.total,
+    obs:o.obs||'',
+    progress:0,
+    orcamentoId:o.id
+  };
+  tasks.push(novaTarefa);
+  renderTasks();
+
+  if(o.total>0){
+    transacoes.unshift({
+      id:nextTxId++,
+      tipo:'entrada',
+      desc:'Orçamento'+(o.numero?' '+o.numero:'')+' — '+o.cliente,
+      valor:o.total,
+      data:hoje,
+      cat:'Venda de peça',
+      orcamentoId:o.id
+    });
+    renderFinanceiro();
+  }
+
+  o.tarefaId=novaTarefa.id;
+  o.status='aprovado';
+  renderHistoricoOrcamentos();
+  salvarDB();
+  showToast('🖨️ Tarefa e lançamento financeiro criados a partir do orçamento de "'+o.cliente+'"!');
+}
+
+function excluirOrcamentoHistorico(id){
+  const o=orcamentosSalvos.find(x=>x.id===id);
+  if(!o)return;
+  if(!confirm('Excluir o orçamento de "'+o.cliente+'" do histórico? Esta ação não pode ser desfeita.'))return;
+  orcamentosSalvos=orcamentosSalvos.filter(x=>x.id!==id);
+  renderHistoricoOrcamentos();
+  salvarDB();
+  showToast('🗑️ Orçamento removido do histórico.','🗑️');
+}
+
+// ===================== ALERTA DE ESTOQUE BAIXO NO ORÇAMENTO =====================
+function renderAlertaEstoqueOrcamento(){
+  const el=document.getElementById('orc-alerta-estoque');
+  if(!el)return;
+  const criticos=estoque.filter(e=>e.total>0 && (e.atual/e.total*100)<=e.alerta);
+  if(criticos.length===0){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML = '⚠️ <strong>Estoque baixo:</strong> ' + criticos.map(e=>{
+    const unidade=e.tipo==='SLA/MSLA'?'ml':'g';
+    return `${e.nome} (${e.atual}${unidade} restantes)`;
+  }).join(', ') + '. Confira antes de prometer prazo ao cliente.';
 }
 
 // ===================== CALCULADORA 3D (nova versão fatiador) =====================
@@ -4202,9 +4408,9 @@ function excluirImpressora(idx){
 }
 
 function limparDados(){
-  if(!confirm('Tem certeza? Todos os dados serão apagados (tarefas, estoque, financeiro, impressoras, catálogo e clientes). Esta ação não pode ser desfeita.'))return;
-  tasks=[];finalizadas=[];estoque=[];transacoes=[];impressoras=[];catalogo=[];clientes=[];
-  renderTasks();renderEstoque();renderFinanceiro();renderImpressoras();renderCatalogo();renderClientes();
+  if(!confirm('Tem certeza? Todos os dados serão apagados (tarefas, estoque, financeiro, impressoras, catálogo, clientes e orçamentos salvos). Esta ação não pode ser desfeita.'))return;
+  tasks=[];finalizadas=[];estoque=[];transacoes=[];impressoras=[];catalogo=[];clientes=[];orcamentosSalvos=[];
+  renderTasks();renderEstoque();renderFinanceiro();renderImpressoras();renderCatalogo();renderClientes();renderHistoricoOrcamentos();
   salvarDB();
   showToast('🗑️ Dados apagados.','🗑️');
 }
@@ -4491,6 +4697,7 @@ renderItens();
 renderTrilhas();
 renderCatalogo();
 renderImpressoras();
+renderHistoricoOrcamentos();
 calcPiece();
 mixColors();
 populateFilamentoSelect();
