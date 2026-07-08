@@ -174,6 +174,10 @@ select.form-input option{background:var(--bg-card);}
 .calc-3d{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
 .calc-result-box{background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(0,128,255,.05));border:1px solid rgba(0,212,255,.2);border-radius:12px;padding:20px;text-align:center;margin-top:16px;}
 .calc-big-number{font-family:'Rajdhani',sans-serif;font-size:48px;font-weight:700;color:var(--accent);text-shadow:0 0 20px rgba(0,212,255,.4);line-height:1;}
+.quick-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.quick-opt-btn{background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text-secondary);cursor:pointer;font-family:'Exo 2',sans-serif;transition:all .15s;white-space:nowrap;}
+.quick-opt-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
+.calc-hint{font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.5;}
 
 /* COLORS */
 .color-mixer{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
@@ -1651,32 +1655,18 @@ select.form-input option{background:var(--bg-card);}
   </div>
   <div class="page" id="page-calculadora3d">
     <div class="section-header">
-      <div><div class="section-title">🧮 Calculadora 3D</div><div class="section-sub">CUSTO REAL DA PEÇA — DADOS DO FATIADOR</div></div>
+      <div><div class="section-title">🧮 Calculadora de Custos</div><div class="section-sub">CALCULE O CUSTO REAL DA SUA IMPRESSÃO 3D</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
       <div style="display:flex;flex-direction:column;gap:16px">
+
         <div class="card">
-          <div class="card-header"><div class="card-title">🖨️ Dados do Fatiador</div></div>
+          <div class="card-header"><div class="card-title">🧵 Filamento</div></div>
           <div class="card-body">
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">Insira os valores que o fatiador (Cura, Bambu Studio, etc.) exibiu após fatiar sua peça.</div>
             <div class="orcamento-form">
               <div class="form-group">
                 <label class="form-label">Nome da Peça (opcional)</label>
                 <input type="text" class="form-input" id="c-nome" placeholder="Ex: Suporte articulado, Miniatura RPG...">
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">⏱️ Horas de Impressão</label>
-                  <input type="number" class="form-input" id="c-horas" value="0" min="0" oninput="calcPiece()" style="font-size:18px;text-align:center">
-                </div>
-                <div class="form-group">
-                  <label class="form-label">⏱️ Minutos</label>
-                  <input type="number" class="form-input" id="c-minutos" value="0" min="0" max="59" oninput="calcPiece()" style="font-size:18px;text-align:center">
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">⚖️ Peso do Filamento (g)</label>
-                <input type="number" class="form-input" id="c-peso-manual" value="0" min="0" step="0.1" oninput="calcPiece()" style="font-size:18px">
               </div>
               <div class="form-group">
                 <label class="form-label">🧵 Filamento Utilizado</label>
@@ -1685,42 +1675,117 @@ select.form-input option{background:var(--bg-card);}
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label">💰 Preço pago por kg (R$)</label>
+                <label class="form-label">💰 Preço do Filamento (R$/kg)</label>
                 <input type="number" class="form-input" id="c-preco-kg" value="80" min="0" step="0.01" oninput="calcPiece()" placeholder="Ex: 80.00">
-                <div style="font-size:11px;color:var(--text-muted);margin-top:4px">= <strong style="color:var(--accent)" id="c-custo-grama">R$0,080/g</strong></div>
+                <div class="calc-hint">= <strong style="color:var(--accent)" id="c-custo-grama">R$0,080/g</strong></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">⚖️ Quantidade Utilizada (g)</label>
+                <input type="number" class="form-input" id="c-peso-manual" value="0" min="0" step="0.1" oninput="calcPiece()" style="font-size:18px">
+                <div class="calc-hint">Consulte o fatiador (Cura, Bambu Studio, etc.) para saber a gramagem</div>
               </div>
             </div>
           </div>
         </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">⚡ Energia e Tempo</div></div>
+          <div class="card-body">
+            <div class="orcamento-form">
+              <div class="form-group">
+                <label class="form-label">🔌 Consumo da Impressora (W)</label>
+                <input type="number" class="form-input" id="c-watts" value="240" min="0" oninput="calcPiece()">
+                <div class="quick-opts">
+                  <button type="button" class="quick-opt-btn" onclick="setCalcWatts(120)">Ender 3 (~120W)</button>
+                  <button type="button" class="quick-opt-btn" onclick="setCalcWatts(200)">Bambu A1 (~200W)</button>
+                  <button type="button" class="quick-opt-btn" onclick="setCalcWatts(350)">Bambu X1C (~350W)</button>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">⏱️ Tempo de Impressão (h)</label>
+                  <input type="number" class="form-input" id="c-horas" value="0" min="0" oninput="calcPiece()" style="font-size:18px;text-align:center">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">⏱️ Minutos</label>
+                  <input type="number" class="form-input" id="c-minutos" value="0" min="0" max="59" oninput="calcPiece()" style="font-size:18px;text-align:center">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">💡 Valor do kWh (R$)</label>
+                <input type="number" class="form-input" id="c-kwh" value="0.80" min="0" step="0.01" oninput="calcPiece()">
+                <div class="quick-opts">
+                  <button type="button" class="quick-opt-btn" onclick="setCalcKwh(0.56)">🟢 Bandeira verde</button>
+                  <button type="button" class="quick-opt-btn" onclick="setCalcKwh(0.68)">🟡 Bandeira amarela</button>
+                  <button type="button" class="quick-opt-btn" onclick="setCalcKwh(0.80)">🔴 Bandeira vermelha</button>
+                </div>
+                <div class="calc-hint">Valores de referência — ajuste conforme sua conta de energia</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">➕ Opcionais</div></div>
+          <div class="card-body">
+            <div class="orcamento-form">
+              <div class="form-group">
+                <label class="form-label">🧑‍🔧 Mão de Obra (opcional, R$)</label>
+                <input type="number" class="form-input" id="c-mao" value="0" min="0" step="0.01" oninput="calcPiece()">
+                <div class="calc-hint">Valor fixo por peça (preparação, acabamento, etc.)</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">🛠️ Custos Fixos (opcional, R$)</label>
+                <input type="number" class="form-input" id="c-fixos" value="0" min="0" step="0.01" oninput="calcPiece()">
+                <div class="calc-hint">Desgaste da impressora, embalagem, acabamento, etc.</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">📈 Margem de Lucro (opcional, %)</label>
+                <input type="number" class="form-input" id="c-margem" value="0" min="0" step="1" oninput="calcPiece()">
+                <div class="quick-opts">
+                  <button type="button" class="quick-opt-btn" onclick="setCalcMargem(30)">30%</button>
+                  <button type="button" class="quick-opt-btn" onclick="setCalcMargem(50)">50%</button>
+                  <button type="button" class="quick-opt-btn" onclick="setCalcMargem(80)">80%</button>
+                  <button type="button" class="quick-opt-btn" onclick="setCalcMargem(100)">100%</button>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="calcPiece()">🧮 Calcular Custo</button>
+                <button class="btn btn-ghost" style="justify-content:center" onclick="limparCalculadora()">🗑️ Limpar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
       <div style="display:flex;flex-direction:column;gap:14px;position:sticky;top:80px">
-        <div class="calc-result-box" style="margin-top:0">
-          <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px">TEMPO DE IMPRESSÃO</div>
-          <div style="font-family:'Rajdhani',sans-serif;font-size:44px;font-weight:700;color:var(--accent2);line-height:1" id="calc-tempo-fmt">0h 00min</div>
-        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="calc-result-box" style="margin-top:0">
-            <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px">CUSTO FILAMENTO</div>
-            <div style="font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--accent3)" id="calc-custo-fil">R$0,00</div>
-          </div>
-          <div class="calc-result-box" style="margin-top:0">
-            <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px">CUSTO ENERGIA</div>
-            <div style="font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--warning)" id="calc-custo-energia">R$0,00</div>
-          </div>
-          <div class="calc-result-box" style="margin-top:0">
-            <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px">MÃO DE OBRA</div>
-            <div style="font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:#a78bfa" id="calc-custo-mao">R$0,00</div>
+            <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px">TEMPO</div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;color:var(--accent2)" id="calc-tempo-fmt">0h 00min</div>
           </div>
           <div class="calc-result-box" style="margin-top:0">
             <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px">PESO</div>
-            <div style="font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--accent)" id="calc-peso-fmt">0g</div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;color:var(--accent)" id="calc-peso-fmt">0g</div>
           </div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(0,212,255,.1),rgba(0,128,255,.05));border:2px solid rgba(0,212,255,.3);border-radius:12px;padding:20px;text-align:center">
-          <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px;letter-spacing:2px">CUSTO TOTAL DA PEÇA</div>
-          <div style="font-family:'Rajdhani',sans-serif;font-size:52px;font-weight:700;color:var(--accent);text-shadow:0 0 30px rgba(0,212,255,.4);line-height:1" id="calc-custo-total">R$0,00</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:6px">filamento + energia + mão de obra</div>
+
+        <div class="orcamento-result" style="margin-top:0">
+          <div class="orcamento-result-title">🧮 Resultado do Cálculo</div>
+          <div class="orcamento-line"><span>Filamento</span><span id="calc-custo-fil">R$0,00</span></div>
+          <div class="orcamento-line"><span>Energia</span><span id="calc-custo-energia">R$0,00</span></div>
+          <div class="orcamento-line"><span>Mão de Obra</span><span id="calc-custo-mao">R$0,00</span></div>
+          <div class="orcamento-line"><span>Custos Fixos</span><span id="calc-custo-fixos">R$0,00</span></div>
+          <div class="orcamento-total"><span>Custo Total</span><span id="calc-custo-total">R$0,00</span></div>
+          <div class="orcamento-line" style="margin-top:8px"><span>Lucro estimado</span><span id="calc-lucro" style="color:var(--success);font-weight:700">R$0,00</span></div>
         </div>
+
+        <div style="background:linear-gradient(135deg,rgba(0,212,255,.1),rgba(0,128,255,.05));border:2px solid rgba(0,212,255,.3);border-radius:12px;padding:20px;text-align:center">
+          <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px;letter-spacing:2px">CUSTO DA IMPRESSÃO</div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:52px;font-weight:700;color:var(--accent);text-shadow:0 0 30px rgba(0,212,255,.4);line-height:1" id="calc-custo-final">R$0,00</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:6px">custo total + margem de lucro</div>
+        </div>
+
         <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px" onclick="salvarNoCatalogo()">📚 Salvar no Catálogo</button>
         <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="enviarParaOrcamento()">📋 Enviar para Orçamento</button>
       </div>
@@ -2147,6 +2212,12 @@ function navigateTo(pageId,el){
   if(pageId==='estatisticas')renderDashboardFinanceiro();
   if(pageId==='orcamento')renderAlertaEstoqueOrcamento();
   if(pageId==='historico-orcamentos')renderHistoricoOrcamentos();
+  if(pageId==='calculadora3d'){
+    const cw=document.getElementById('c-watts'), ck=document.getElementById('c-kwh');
+    if(cw) cw.value = config.watts||240;
+    if(ck) ck.value = config.energia||0.80;
+    calcPiece();
+  }
   closeSidebar();
 }
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
@@ -3482,18 +3553,46 @@ function populateFilamentoSelect(){
   if(current) sel.value = current;
 }
 
+function setCalcWatts(w){
+  const el = document.getElementById('c-watts');
+  if(el){ el.value = w; calcPiece(); }
+}
+function setCalcKwh(v){
+  const el = document.getElementById('c-kwh');
+  if(el){ el.value = v; calcPiece(); }
+}
+function setCalcMargem(p){
+  const el = document.getElementById('c-margem');
+  if(el){ el.value = p; calcPiece(); }
+}
+function limparCalculadora(){
+  ['c-nome'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const sel = document.getElementById('c-filamento-sel');
+  if(sel) sel.value = '';
+  const defaults = { 'c-preco-kg':80, 'c-peso-manual':0, 'c-watts':config.watts||240, 'c-horas':0, 'c-minutos':0, 'c-kwh':config.energia||0.80, 'c-mao':0, 'c-fixos':0, 'c-margem':0 };
+  Object.keys(defaults).forEach(id=>{ const el=document.getElementById(id); if(el) el.value = defaults[id]; });
+  calcPiece();
+  showToast('🗑️ Calculadora limpa!');
+}
+
 function calcPiece(){
   const horas = parseFloat(document.getElementById('c-horas')?document.getElementById('c-horas').value:0)||0;
   const minutos = parseFloat(document.getElementById('c-minutos')?document.getElementById('c-minutos').value:0)||0;
   const pesoG = parseFloat(document.getElementById('c-peso-manual')?document.getElementById('c-peso-manual').value:0)||0;
   const precoKg = parseFloat(document.getElementById('c-preco-kg')?document.getElementById('c-preco-kg').value:80)||80;
+  const watts = parseFloat(document.getElementById('c-watts')?document.getElementById('c-watts').value:config.watts)||0;
+  const kwh = parseFloat(document.getElementById('c-kwh')?document.getElementById('c-kwh').value:config.energia)||0;
+  const custoMao = parseFloat(document.getElementById('c-mao')?document.getElementById('c-mao').value:0)||0;
+  const custoFixos = parseFloat(document.getElementById('c-fixos')?document.getElementById('c-fixos').value:0)||0;
+  const margem = parseFloat(document.getElementById('c-margem')?document.getElementById('c-margem').value:0)||0;
 
   const tempoH = horas + minutos/60;
   const custoPorGrama = precoKg / 1000;
   const custoFil = pesoG * custoPorGrama;
-  const custoEnergia = tempoH * (config.watts/1000) * config.energia;
-  const custoMao = tempoH * config.mao;
-  const custoTotal = custoFil + custoEnergia + custoMao;
+  const custoEnergia = tempoH * (watts/1000) * kwh;
+  const custoTotal = custoFil + custoEnergia + custoMao + custoFixos;
+  const lucro = custoTotal * (margem/100);
+  const custoFinal = custoTotal + lucro;
 
   // Atualiza custo/grama display
   const cg = document.getElementById('c-custo-grama');
@@ -3515,8 +3614,17 @@ function calcPiece(){
   const mao = document.getElementById('calc-custo-mao');
   if(mao) mao.textContent = fmt(custoMao);
 
+  const fix = document.getElementById('calc-custo-fixos');
+  if(fix) fix.textContent = fmt(custoFixos);
+
   const tot = document.getElementById('calc-custo-total');
   if(tot) tot.textContent = fmt(custoTotal);
+
+  const luc = document.getElementById('calc-lucro');
+  if(luc) luc.textContent = fmt(lucro);
+
+  const final = document.getElementById('calc-custo-final');
+  if(final) final.textContent = fmt(custoFinal);
 
   // Compatibilidade com ids antigos (usados em outros lugares)
   const cp = document.getElementById('calc-peso');
@@ -3524,7 +3632,7 @@ function calcPiece(){
   const cc = document.getElementById('calc-custo');
   if(cc) cc.textContent = fmt(custoFil);
 
-  return { tempoH, pesoG, custoFil, custoEnergia, custoMao, custoTotal, precoKg };
+  return { tempoH, pesoG, custoFil, custoEnergia, custoMao, custoFixos, custoTotal, lucro, custoFinal, precoKg };
 }
 
 function salvarNoCatalogo(){
@@ -3550,13 +3658,13 @@ function salvarNoCatalogo(){
 function enviarParaOrcamento(){
   const r = calcPiece();
   const nome = (document.getElementById('c-nome')?document.getElementById('c-nome').value:'').trim() || 'Impressão 3D';
-  adicionarItem(nome + ' (' + r.pesoG + 'g)', 1, 'Calculadora 3D', parseFloat(r.custoTotal.toFixed(2)));
+  adicionarItem(nome + ' (' + r.pesoG + 'g)', 1, 'Calculadora 3D', parseFloat(r.custoFinal.toFixed(2)));
   navigateTo('orcamento', null);
   document.querySelectorAll('.nav-item').forEach(n=>{
     if(n.textContent.includes('Orçamento')) n.classList.add('active');
     else n.classList.remove('active');
   });
-  showToast('📋 Peça adicionada ao orçamento com custo de ' + fmt(r.custoTotal) + '!');
+  showToast('📋 Peça adicionada ao orçamento por ' + fmt(r.custoFinal) + '!');
 }
 
 // legacy compat
