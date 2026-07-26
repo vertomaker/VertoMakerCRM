@@ -8,7 +8,8 @@
 
   let viewer = null;
   let regenToken = 0; // guards against out-of-order async (text) regenerations
-  let regenTimer = null;
+  let dirty = false;  // true when params changed since the last successful generation
+  let lastGeometry = null;
 
   const els = {};
 
@@ -21,10 +22,12 @@
     viewer = VertoViewer.create(els.viewportHost);
     const prefs = VertoState.getViewerPrefs();
     setToolbarState(prefs);
+    viewer.setDimensionsVisible(prefs.showDimensions);
 
     wireTopbar();
     wireViewerToolbar();
-    wireMobileTabs();
+    wireMobileSidebarToggle();
+    wireBottomSheet();
 
     const sidebarApi = VertoUI.renderSidebar(els.sidebar, { onSelect: selectModel });
     els.sidebarApi = sidebarApi;
@@ -37,13 +40,16 @@
 
   function cacheEls() {
     els.sidebar = document.getElementById('sidebar');
-    els.paramsPanel = document.getElementById('params-panel');
     els.viewportHost = document.getElementById('viewport-host');
     els.loading = document.getElementById('viewer-loading');
-    els.estimatorHost = document.getElementById('estimator-host');
     els.projectNameTag = document.getElementById('project-name-tag');
     els.btnUndo = document.getElementById('btn-undo');
     els.btnRedo = document.getElementById('btn-redo');
+    els.sheet = document.getElementById('bottom-sheet');
+    els.sheetTabs = document.getElementById('sheet-tabs');
+    els.sheetContent = document.getElementById('sheet-content');
+    els.btnGenerate = document.getElementById('btn-generate');
+    els.backdrop = document.getElementById('mobile-backdrop');
   }
 
   function bootstrapInitialModel(sidebarApi) {
@@ -64,23 +70,24 @@
     const defaults = {};
     for (const p of def.params) defaults[p.key] = p.default;
     VertoState.setModel(modelId, defaults);
-    if (els.mobileSetTab && window.matchMedia('(max-width: 980px)').matches) {
-      els.mobileSetTab('viewer');
-    }
+    if (window.matchMedia('(max-width: 980px)').matches) closeSidebarDrawer();
   }
 
-  function onStateEvent(event) {
+  function onStateEvent(event, payload) {
     if (event === 'model-changed') {
       const def = VertoRegistry.get(VertoState.getModelId());
       if (!def) return;
       els.sidebarApi.markActive(def.id);
-      VertoUI.renderParamsPanel(els.paramsPanel, def, VertoState.getParams(), onParamChange);
+      renderSheet();
       updateProjectTag();
-      regenerate();
+      regenerate(); // initial view for a freshly selected model
     } else if (event === 'params-changed') {
-      const def = VertoRegistry.get(VertoState.getModelId());
-      if (def) VertoUI.renderParamsPanel(els.paramsPanel, def, VertoState.getParams(), onParamChange);
-      regenerate(true);
+      renderSheet();
+      if (payload && payload.immediate) {
+        regenerate();
+      } else {
+        setDirty(true);
+      }
     } else if (event === 'theme-changed') {
       applyTheme(VertoState.getTheme());
     } else if (event === 'favorites-changed') {
@@ -89,48 +96,63 @@
     updateUndoRedoButtons();
   }
 
+  function renderSheet() {
+    const def = VertoRegistry.get(VertoState.getModelId());
+    if (!def) return;
+    VertoUI.renderBottomSheet(
+      { tabsHost: els.sheetTabs, contentHost: els.sheetContent },
+      def,
+      VertoState.getParams(),
+      { onChange: onParamChange, onInfoTabShown: () => renderEstimatorIfPossible() }
+    );
+  }
+
   function onParamChange(key, value) {
     VertoState.setParam(key, value);
   }
 
+  function setDirty(state) {
+    dirty = state;
+    els.btnGenerate.classList.toggle('dirty', state);
+  }
+
   // --------------------------------------------------------- Regeneration
-  function regenerate(debounce) {
-    if (regenTimer) clearTimeout(regenTimer);
-    const run = () => {
-      const def = VertoRegistry.get(VertoState.getModelId());
-      if (!def) return;
-      const myToken = ++regenToken;
-      els.loading.classList.add('show');
-      let result;
-      try {
-        result = def.generate(VertoState.getParams());
-      } catch (err) {
-        console.error('[app] Erro ao gerar geometria:', err);
-        VertoUI.toast('Erro ao gerar o modelo: ' + err.message, 'error');
-        els.loading.classList.remove('show');
-        return;
-      }
-      Promise.resolve(result).then((geometry) => {
-        if (myToken !== regenToken) return; // a newer regeneration superseded this one
-        viewer.setGeometry(geometry, { fit: false });
-        renderEstimator(geometry);
-        els.loading.classList.remove('show');
-      }).catch((err) => {
-        console.error('[app] Erro ao gerar geometria:', err);
-        VertoUI.toast('Erro ao gerar o modelo: ' + err.message, 'error');
-        els.loading.classList.remove('show');
-      });
-    };
-    if (debounce) regenTimer = setTimeout(run, 120);
-    else run();
+  function regenerate() {
+    const def = VertoRegistry.get(VertoState.getModelId());
+    if (!def) return;
+    const myToken = ++regenToken;
+    els.loading.classList.add('show');
+    let result;
+    try {
+      result = def.generate(VertoState.getParams());
+    } catch (err) {
+      console.error('[app] Erro ao gerar geometria:', err);
+      VertoUI.toast('Erro ao gerar o modelo: ' + err.message, 'error');
+      els.loading.classList.remove('show');
+      return;
+    }
+    Promise.resolve(result).then((geometry) => {
+      if (myToken !== regenToken) return; // a newer regeneration superseded this one
+      viewer.setGeometry(geometry, { fit: false });
+      lastGeometry = geometry;
+      renderEstimatorIfPossible();
+      els.loading.classList.remove('show');
+      setDirty(false);
+    }).catch((err) => {
+      console.error('[app] Erro ao gerar geometria:', err);
+      VertoUI.toast('Erro ao gerar o modelo: ' + err.message, 'error');
+      els.loading.classList.remove('show');
+    });
   }
 
   // ------------------------------------------------------------ Estimator
   const estimatorSettings = { material: 'PLA', infillPercent: 20, wallLoops: 3, layerHeight: 0.2, printSpeedMmS: 60, filamentPriceKg: 120, energyPriceKwh: 0.75, printerWatts: 120 };
 
-  function renderEstimator(geometry) {
-    const r = VertoEstimator.estimate({ geometry, ...estimatorSettings });
-    els.estimatorHost.innerHTML = '';
+  function renderEstimatorIfPossible() {
+    const host = document.getElementById('estimator-host');
+    if (!host || !lastGeometry) return;
+    const r = VertoEstimator.estimate({ geometry: lastGeometry, ...estimatorSettings });
+    host.innerHTML = '';
     const card = VertoUI.el('div', { class: 'estimator-card' }, [
       VertoUI.el('h3', {}, 'Estimativas'),
       VertoUI.el('div', { class: 'estimator-grid' }, [
@@ -142,7 +164,7 @@
         estimatorItem(`${r.dims.x.toFixed(0)}×${r.dims.y.toFixed(0)}×${r.dims.z.toFixed(0)} mm`, 'Dimensões'),
       ]),
     ]);
-    els.estimatorHost.appendChild(card);
+    host.appendChild(card);
   }
   function estimatorItem(val, lbl) {
     return VertoUI.el('div', { class: 'estimator-item' }, [
@@ -199,6 +221,7 @@
   function doExport(kind) {
     const geometry = viewer.getGeometry();
     if (!geometry) { VertoUI.toast('Nenhum modelo para exportar.', 'error'); return; }
+    if (dirty) { VertoUI.toast('Há alterações não geradas - toque em "Gerar" antes de exportar.', 'error'); return; }
     const def = VertoRegistry.get(VertoState.getModelId());
     const name = (def ? def.name : 'modelo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_').toLowerCase();
     if (kind === 'stl') VertoExporter.triggerDownload(VertoExporter.exportSTL(geometry, name), `${name}.stl`);
@@ -302,7 +325,7 @@
       return VertoUI.el('div', { class: 'list-row' }, [
         VertoUI.el('div', { class: 'name' }, name),
         VertoUI.el('div', { class: 'list-row-actions' }, [
-          VertoUI.el('button', { html: VertoIcons.get('open'), title: 'Aplicar', onclick: () => { VertoState.setParams(params); modal.close(); VertoUI.toast(`Preset "${name}" aplicado.`, 'success'); } }),
+          VertoUI.el('button', { html: VertoIcons.get('open'), title: 'Aplicar', onclick: () => { VertoState.setParams(params, { immediate: true }); modal.close(); VertoUI.toast(`Preset "${name}" aplicado.`, 'success'); } }),
           deletable ? VertoUI.el('button', { html: VertoIcons.get('trash'), title: 'Excluir', onclick: onDelete }) : null,
         ]),
       ]);
@@ -341,6 +364,7 @@
     const btnSolid = document.getElementById('btn-solid');
     const btnGrid = document.getElementById('btn-grid');
     const btnAxes = document.getElementById('btn-axes');
+    const btnDims = document.getElementById('btn-dimensions');
     const btnReset = document.getElementById('btn-reset-view');
 
     btnWire.addEventListener('click', () => { viewer.setWireframe(true); VertoState.setViewerPrefs({ wireframe: true }); setToolbarState(VertoState.getViewerPrefs()); });
@@ -352,6 +376,10 @@
     btnAxes.addEventListener('click', () => {
       const prefs = VertoState.setViewerPrefs({ showAxes: !VertoState.getViewerPrefs().showAxes });
       viewer.setAxes(prefs.showAxes); setToolbarState(prefs);
+    });
+    btnDims.addEventListener('click', () => {
+      const prefs = VertoState.setViewerPrefs({ showDimensions: !VertoState.getViewerPrefs().showDimensions });
+      viewer.setDimensionsVisible(prefs.showDimensions); setToolbarState(prefs);
     });
     btnReset.addEventListener('click', () => viewer.resetView());
 
@@ -366,42 +394,37 @@
     document.getElementById('btn-solid').classList.toggle('active', !prefs.wireframe);
     document.getElementById('btn-grid').classList.toggle('active', prefs.showGrid);
     document.getElementById('btn-axes').classList.toggle('active', prefs.showAxes);
+    document.getElementById('btn-dimensions').classList.toggle('active', prefs.showDimensions);
     const bg = document.getElementById('bg-color-input');
     if (bg) bg.value = prefs.bgColor;
   }
 
-  // ----------------------------------------------------------- Mobile UI
-  function wireMobileTabs() {
-    const btnModels = document.getElementById('tab-models');
-    const btnViewer = document.getElementById('tab-viewer');
-    const btnParams = document.getElementById('tab-params');
-    const backdrop = document.getElementById('mobile-backdrop');
-    if (!btnModels) return;
+  // --------------------------------------------------------- Bottom sheet
+  function wireBottomSheet() {
+    const handle = document.getElementById('sheet-handle');
+    handle.addEventListener('click', () => {
+      const collapsed = els.sheet.dataset.state === 'peek';
+      els.sheet.dataset.state = collapsed ? 'expanded' : 'peek';
+    });
+    els.btnGenerate.addEventListener('click', () => regenerate());
+  }
 
-    let current = 'viewer';
-
-    function setTab(tab) {
-      current = tab;
-      els.sidebar.classList.toggle('open', tab === 'models');
-      els.paramsPanel.classList.toggle('open', tab === 'params');
-      if (backdrop) backdrop.classList.toggle('show', tab !== 'viewer');
-      [btnModels, btnViewer, btnParams].forEach((b) => b.classList.remove('active'));
-      ({ models: btnModels, viewer: btnViewer, params: btnParams })[tab].classList.add('active');
-      // The 3D canvas may have been resized (or hidden) while a drawer
-      // covered it - always give it a frame to recompute its size.
-      requestAnimationFrame(() => viewer.resize());
-    }
-
-    function toggleTab(tab) {
-      setTab(current === tab ? 'viewer' : tab);
-    }
-
-    btnModels.addEventListener('click', () => toggleTab('models'));
-    btnViewer.addEventListener('click', () => setTab('viewer'));
-    btnParams.addEventListener('click', () => toggleTab('params'));
-    if (backdrop) backdrop.addEventListener('click', () => setTab('viewer'));
-
-    els.mobileSetTab = setTab;
-    setTab('viewer');
+  // ----------------------------------------------------- Mobile sidebar
+  function wireMobileSidebarToggle() {
+    const btn = document.getElementById('btn-toggle-sidebar');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const isOpen = els.sidebar.classList.contains('open');
+      isOpen ? closeSidebarDrawer() : openSidebarDrawer();
+    });
+    if (els.backdrop) els.backdrop.addEventListener('click', closeSidebarDrawer);
+  }
+  function openSidebarDrawer() {
+    els.sidebar.classList.add('open');
+    if (els.backdrop) els.backdrop.classList.add('show');
+  }
+  function closeSidebarDrawer() {
+    els.sidebar.classList.remove('open');
+    if (els.backdrop) els.backdrop.classList.remove('show');
   }
 })();

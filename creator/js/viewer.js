@@ -48,6 +48,84 @@
     });
     const wireMaterial = new THREE.MeshBasicMaterial({ color: 0xe8352f, wireframe: true });
 
+    // ---- dimension-line overlay (width/height/depth callouts) ------
+    const DIM_COLOR = '#35d67e';
+    let dimensionGroup = new THREE.Group();
+    scene.add(dimensionGroup);
+    let dimensionsVisible = true;
+
+    function makeTextSprite(text) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const fontSize = 72;
+      ctx.font = `700 ${fontSize}px 'JetBrains Mono', monospace`;
+      const width = Math.ceil(ctx.measureText(text).width) + 28;
+      const height = fontSize + 28;
+      canvas.width = width;
+      canvas.height = height;
+      ctx.font = `700 ${fontSize}px 'JetBrains Mono', monospace`;
+      ctx.fillStyle = DIM_COLOR;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 12, height / 2);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
+      const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false, transparent: true });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.userData.aspect = width / height;
+      return sprite;
+    }
+
+    function buildDimensionGroup(geometry) {
+      geometry.computeBoundingBox();
+      const bb = geometry.boundingBox;
+      const dx = bb.max.x - bb.min.x, dy = bb.max.y - bb.min.y, dz = bb.max.z - bb.min.z;
+      const maxDim = Math.max(dx, dy, dz, 1);
+      const offset = maxDim * 0.12;
+      const group = new THREE.Group();
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x35d67e, depthTest: false });
+
+      function addLine(a, b) {
+        const g = new THREE.BufferGeometry().setFromPoints([a, b]);
+        const line = new THREE.Line(g, lineMat);
+        line.renderOrder = 999;
+        group.add(line);
+      }
+      function addLabel(text, pos) {
+        const sprite = makeTextSprite(text);
+        const s = maxDim * 0.1;
+        sprite.scale.set(s * sprite.userData.aspect, s, 1);
+        sprite.position.copy(pos);
+        sprite.renderOrder = 1000;
+        group.add(sprite);
+      }
+
+      const zFront = bb.min.z - offset;
+      addLine(new THREE.Vector3(bb.min.x, bb.min.y, zFront), new THREE.Vector3(bb.max.x, bb.min.y, zFront));
+      addLine(new THREE.Vector3(bb.min.x, bb.min.y, bb.min.z), new THREE.Vector3(bb.min.x, bb.min.y, zFront));
+      addLine(new THREE.Vector3(bb.max.x, bb.min.y, bb.min.z), new THREE.Vector3(bb.max.x, bb.min.y, zFront));
+      addLabel(dx.toFixed(1) + 'mm', new THREE.Vector3((bb.min.x + bb.max.x) / 2, bb.min.y, zFront - maxDim * 0.05));
+
+      const xSide = bb.min.x - offset;
+      addLine(new THREE.Vector3(xSide, bb.min.y, bb.min.z), new THREE.Vector3(xSide, bb.max.y, bb.min.z));
+      addLine(new THREE.Vector3(bb.min.x, bb.min.y, bb.min.z), new THREE.Vector3(xSide, bb.min.y, bb.min.z));
+      addLine(new THREE.Vector3(bb.min.x, bb.max.y, bb.min.z), new THREE.Vector3(xSide, bb.max.y, bb.min.z));
+      addLabel(dy.toFixed(1) + 'mm', new THREE.Vector3(xSide - maxDim * 0.06, (bb.min.y + bb.max.y) / 2, bb.min.z));
+
+      const yTop = bb.max.y + offset;
+      addLine(new THREE.Vector3(bb.max.x, yTop, bb.min.z), new THREE.Vector3(bb.max.x, yTop, bb.max.z));
+      addLine(new THREE.Vector3(bb.max.x, bb.max.y, bb.min.z), new THREE.Vector3(bb.max.x, yTop, bb.min.z));
+      addLine(new THREE.Vector3(bb.max.x, bb.max.y, bb.max.z), new THREE.Vector3(bb.max.x, yTop, bb.max.z));
+      addLabel(dz.toFixed(1) + 'mm', new THREE.Vector3(bb.max.x + maxDim * 0.02, yTop, (bb.min.z + bb.max.z) / 2));
+
+      group.visible = dimensionsVisible;
+      return group;
+    }
+
+    function setDimensionsVisible(visible) {
+      dimensionsVisible = visible;
+      dimensionGroup.visible = visible;
+    }
+
     let currentMesh = null;
     let currentGeometry = null;
 
@@ -76,6 +154,11 @@
       currentMesh = new THREE.Mesh(geometry, prefs.wireframe ? wireMaterial : material);
       currentMesh.castShadow = false;
       scene.add(currentMesh);
+
+      scene.remove(dimensionGroup);
+      dimensionGroup = buildDimensionGroup(geometry);
+      scene.add(dimensionGroup);
+
       if (opts.fit !== false) fitCameraToObject(currentMesh);
       updateStatusBar();
     }
@@ -131,7 +214,7 @@
 
     return {
       scene, camera, renderer, controls,
-      setGeometry, setWireframe, setGrid, setAxes, setBackground, setAutoRotate,
+      setGeometry, setWireframe, setGrid, setAxes, setBackground, setAutoRotate, setDimensionsVisible,
       resetView, captureImage, getGeometry, getMesh, resize,
     };
   }

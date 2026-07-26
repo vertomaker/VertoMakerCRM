@@ -89,7 +89,7 @@
         if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
         redoStack = [];
       }
-      emit('params-changed', { params: current.params, key, value });
+      emit('params-changed', { params: current.params, key, value, immediate: false });
     },
 
     setParams(newParams, opts = {}) {
@@ -99,14 +99,14 @@
         if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
         redoStack = [];
       }
-      emit('params-changed', { params: current.params });
+      emit('params-changed', { params: current.params, immediate: opts.immediate !== false });
     },
 
     undo() {
       if (undoStack.length <= 1) return false;
       redoStack.push(undoStack.pop());
       current.params = JSON.parse(JSON.stringify(undoStack[undoStack.length - 1]));
-      emit('params-changed', { params: current.params });
+      emit('params-changed', { params: current.params, immediate: true });
       return true;
     },
     redo() {
@@ -114,7 +114,7 @@
       const next = redoStack.pop();
       undoStack.push(next);
       current.params = JSON.parse(JSON.stringify(next));
-      emit('params-changed', { params: current.params });
+      emit('params-changed', { params: current.params, immediate: true });
       return true;
     },
     canUndo() { return undoStack.length > 1; },
@@ -240,7 +240,7 @@
     // --------------------------------------------------- viewer prefs
     getViewerPrefs() {
       return readJSON(LS_KEYS.viewerPrefs, {
-        wireframe: false, showGrid: true, showAxes: true, bgColor: '#111114', autoRotate: false,
+        wireframe: false, showGrid: true, showAxes: true, showDimensions: true, bgColor: '#111114', autoRotate: false,
       });
     },
     setViewerPrefs(patch) {

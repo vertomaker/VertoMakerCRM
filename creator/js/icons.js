@@ -39,6 +39,7 @@
     trash: `<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" ${stroke}/></svg>`,
     box: `<svg viewBox="0 0 24 24"><path d="M12 3 20 7.5v9L12 21 4 16.5v-9Z" ${stroke}/><path d="M12 3v9m0 9v-9M4 7.5 12 12l8-4.5" ${stroke}/></svg>`,
     menu: `<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" ${stroke}/></svg>`,
+    sparkle: `<svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z" fill="currentColor" ${stroke}/><path d="M19 3l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7Z" fill="currentColor"/></svg>`,
   };
 
   global.VertoIcons = {

@@ -144,29 +144,61 @@
     ]);
   }
 
-  function renderParamsPanel(container, modelDef, params, onChange) {
-    container.innerHTML = '';
-    container.appendChild(el('h2', { class: 'params-title' }, [
+  // -------------------------------------------------------- Bottom sheet
+  /**
+   * Renders a MakeLab-style bottom sheet: horizontal tabs (one per
+   * parameter `group`, plus a trailing "Info" tab for the estimator),
+   * a scrollable content area for the active tab, and a footer with
+   * the Generate button owned by app.js.
+   */
+  function renderBottomSheet(refs, modelDef, params, callbacks) {
+    const { tabsHost, contentHost } = refs;
+    const { onChange } = callbacks;
+
+    const groups = [];
+    const groupParams = {};
+    for (const p of modelDef.params) {
+      const g = p.group || 'Parâmetros';
+      if (!groupParams[g]) { groups.push(g); groupParams[g] = []; }
+      groupParams[g].push(p);
+    }
+    const tabNames = [...groups, 'Info'];
+    let activeTab = tabsHost.dataset.modelId === modelDef.id && tabNames.includes(tabsHost.dataset.activeTab)
+      ? tabsHost.dataset.activeTab : tabNames[0];
+    tabsHost.dataset.modelId = modelDef.id;
+    tabsHost.dataset.activeTab = activeTab;
+
+    function renderContent() {
+      contentHost.innerHTML = '';
+      if (activeTab === 'Info') {
+        contentHost.appendChild(el('div', { id: 'estimator-host' }));
+        if (callbacks.onInfoTabShown) callbacks.onInfoTabShown();
+        return;
+      }
+      for (const p of groupParams[activeTab] || []) {
+        if (p.showIf && !p.showIf(params)) continue;
+        contentHost.appendChild(paramControl(p, params[p.key], (v) => onChange(p.key, v)));
+      }
+    }
+
+    tabsHost.innerHTML = '';
+    tabsHost.appendChild(el('span', { class: 'sheet-model-name' }, [
       el('span', { class: 'model-icon', html: VertoIcons.get(modelDef.icon || 'box') }),
       ' ' + modelDef.name,
     ]));
-
-    const groups = {};
-    for (const p of modelDef.params) {
-      const g = p.group || 'Parâmetros';
-      (groups[g] = groups[g] || []).push(p);
+    for (const name of tabNames) {
+      const tab = el('button', { class: 'sheet-tab' + (name === activeTab ? ' active' : '') }, name);
+      tab.addEventListener('click', () => {
+        activeTab = name;
+        tabsHost.dataset.activeTab = name;
+        tabsHost.querySelectorAll('.sheet-tab').forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderContent();
+      });
+      tabsHost.appendChild(tab);
     }
 
-    for (const [groupName, groupParams] of Object.entries(groups)) {
-      const groupEl = el('div', { class: 'param-group' }, [
-        el('div', { class: 'param-group-title' }, groupName),
-      ]);
-      for (const p of groupParams) {
-        if (p.showIf && !p.showIf(params)) continue;
-        groupEl.appendChild(paramControl(p, params[p.key], (v) => onChange(p.key, v)));
-      }
-      container.appendChild(groupEl);
-    }
+    renderContent();
   }
 
   // -------------------------------------------------------------- Modal
@@ -198,5 +230,5 @@
     setTimeout(() => { node.classList.remove('show'); setTimeout(() => node.remove(), 300); }, 3200);
   }
 
-  global.VertoUI = { el, renderSidebar, renderParamsPanel, openModal, toast };
+  global.VertoUI = { el, renderSidebar, renderBottomSheet, openModal, toast };
 })(window);
