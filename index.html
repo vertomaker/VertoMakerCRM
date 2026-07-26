@@ -1798,8 +1798,8 @@ select.form-input option{background:var(--bg-card);}
        apenas os arquivos dentro da pasta /creator - nada aqui precisa
        mudar. Veja creator/README.md para a arquitetura completa. -->
   <div class="page" id="page-criador3d" style="padding:0;">
-    <iframe src="creator/index.html" title="VertoMaker Creator"
-      style="width:100%;height:calc(100vh - 64px);border:none;display:block;background:#0a0a0b;"
+    <iframe id="criador3d-frame" src="creator/index.html" title="VertoMaker Creator"
+      style="width:100%;border:none;display:block;background:#0a0a0b;"
       loading="lazy"></iframe>
   </div>
 
@@ -2224,6 +2224,11 @@ function navigateTo(pageId,el){
   if(pageId==='estatisticas')renderDashboardFinanceiro();
   if(pageId==='orcamento')renderAlertaEstoqueOrcamento();
   if(pageId==='historico-orcamentos')renderHistoricoOrcamentos();
+  if(pageId==='criador3d'){
+    sizeCriador3DFrame();
+    setTimeout(sizeCriador3DFrame,150);
+    setTimeout(sizeCriador3DFrame,500);
+  }
   if(pageId==='calculadora3d'){
     const cw=document.getElementById('c-watts'), ck=document.getElementById('c-kwh');
     if(cw) cw.value = config.watts||240;
@@ -2234,6 +2239,22 @@ function navigateTo(pageId,el){
 }
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
+
+// Criador 3D roda num <iframe> (creator/index.html). Em navegadores mobile,
+// "100vh" inclui a área escondida atrás da barra de endereço, então o
+// iframe ficava mais alto que a tela realmente visível e a barra inferior
+// do app (Modelos/Visualizar/Parâmetros) saía da área visível. Medimos a
+// altura real disponível com window.innerHeight, que reflete a janela
+// visível de verdade e é recalculado sempre que ela muda.
+function sizeCriador3DFrame(){
+  const frame=document.getElementById('criador3d-frame');
+  const topbar=document.querySelector('.topbar');
+  if(!frame||!topbar)return;
+  const h=window.innerHeight-topbar.getBoundingClientRect().height;
+  frame.style.height=Math.max(h,320)+'px';
+}
+window.addEventListener('resize',()=>{ if(document.getElementById('page-criador3d').classList.contains('active')) sizeCriador3DFrame(); });
+window.addEventListener('orientationchange',()=>{ setTimeout(sizeCriador3DFrame,300); });
 
 // ===================== TASKS =====================
 function renderTasks(){
