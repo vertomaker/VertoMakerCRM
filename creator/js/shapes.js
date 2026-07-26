@@ -63,11 +63,25 @@
   }
 
   /** Merge an array of BufferGeometries (already in local space) into one, without booleans.
-   *  NOTE: pinned to three.js r146, where this helper is still named
-   *  `mergeBufferGeometries` (it was renamed to `mergeGeometries` only in
-   *  later releases that dropped the classic non-module build). */
+   *  Geometries coming from our CSG engine only carry position+normal and
+   *  are always non-indexed, while stock THREE geometries (Box, Cylinder,
+   *  Torus, TextGeometry...) are indexed and also carry a `uv` attribute.
+   *  Mixing the two makes `mergeBufferGeometries` bail out and return null,
+   *  so every geometry is first normalized to the same shape: non-indexed,
+   *  position+normal only (we never use textures in this app, so uv isn't
+   *  needed for anything downstream). */
+  function normalizeForMerge(geometry) {
+    const geo = geometry.index ? geometry.toNonIndexed() : geometry;
+    if (!geo.attributes.normal) geo.computeVertexNormals();
+    const clean = new THREE.BufferGeometry();
+    clean.setAttribute('position', geo.attributes.position.clone());
+    clean.setAttribute('normal', geo.attributes.normal.clone());
+    return clean;
+  }
+
   function mergeGeometries(geometries) {
-    const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries, false);
+    const normalized = geometries.map(normalizeForMerge);
+    const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(normalized, false);
     if (!merged) throw new Error('Falha ao mesclar geometrias (mergeBufferGeometries retornou null).');
     merged.computeVertexNormals();
     return merged;
