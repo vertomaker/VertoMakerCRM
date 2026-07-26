@@ -62,9 +62,13 @@
     return mesh;
   }
 
-  /** Merge an array of BufferGeometries (already in local space) into one, without booleans. */
+  /** Merge an array of BufferGeometries (already in local space) into one, without booleans.
+   *  NOTE: pinned to three.js r146, where this helper is still named
+   *  `mergeBufferGeometries` (it was renamed to `mergeGeometries` only in
+   *  later releases that dropped the classic non-module build). */
   function mergeGeometries(geometries) {
-    const merged = THREE.BufferGeometryUtils.mergeGeometries(geometries, false);
+    const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries, false);
+    if (!merged) throw new Error('Falha ao mesclar geometrias (mergeBufferGeometries retornou null).');
     merged.computeVertexNormals();
     return merged;
   }
@@ -72,7 +76,7 @@
   // ---- Text (async - depends on a loaded font) --------------------
   let cachedFont = null;
   let fontLoadPromise = null;
-  const FONT_URL = 'https://threejs.org/examples/fonts/helvetiker_regular.typeface.json';
+  const FONT_URL = 'https://cdn.jsdelivr.net/npm/three@0.146.0/examples/fonts/helvetiker_regular.typeface.json';
 
   function loadFont() {
     if (cachedFont) return Promise.resolve(cachedFont);

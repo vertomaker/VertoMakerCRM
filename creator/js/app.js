@@ -64,6 +64,9 @@
     const defaults = {};
     for (const p of def.params) defaults[p.key] = p.default;
     VertoState.setModel(modelId, defaults);
+    if (els.mobileSetTab && window.matchMedia('(max-width: 980px)').matches) {
+      els.mobileSetTab('viewer');
+    }
   }
 
   function onStateEvent(event) {
@@ -372,16 +375,33 @@
     const btnModels = document.getElementById('tab-models');
     const btnViewer = document.getElementById('tab-viewer');
     const btnParams = document.getElementById('tab-params');
+    const backdrop = document.getElementById('mobile-backdrop');
     if (!btnModels) return;
+
+    let current = 'viewer';
+
     function setTab(tab) {
+      current = tab;
       els.sidebar.classList.toggle('open', tab === 'models');
       els.paramsPanel.classList.toggle('open', tab === 'params');
+      if (backdrop) backdrop.classList.toggle('show', tab !== 'viewer');
       [btnModels, btnViewer, btnParams].forEach((b) => b.classList.remove('active'));
       ({ models: btnModels, viewer: btnViewer, params: btnParams })[tab].classList.add('active');
+      // The 3D canvas may have been resized (or hidden) while a drawer
+      // covered it - always give it a frame to recompute its size.
+      requestAnimationFrame(() => viewer.resize());
     }
-    btnModels.addEventListener('click', () => setTab('models'));
+
+    function toggleTab(tab) {
+      setTab(current === tab ? 'viewer' : tab);
+    }
+
+    btnModels.addEventListener('click', () => toggleTab('models'));
     btnViewer.addEventListener('click', () => setTab('viewer'));
-    btnParams.addEventListener('click', () => setTab('params'));
+    btnParams.addEventListener('click', () => toggleTab('params'));
+    if (backdrop) backdrop.addEventListener('click', () => setTab('viewer'));
+
+    els.mobileSetTab = setTab;
     setTab('viewer');
   }
 })();
