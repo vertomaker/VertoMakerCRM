@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VertoMaker Creator</title>
+<meta name="description" content="Crie objetos 3D paramétricos para impressão 3D, ajuste medidas em tempo real e exporte em STL, OBJ ou 3MF.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ================================================== Barra superior -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="logo" id="brand-logo"></span>
+      <h1>Verto<b>Maker</b> Creator</h1>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="btn btn-icon" id="btn-new" title="Novo Projeto"><span id="icon-new"></span></button>
+      <button class="btn btn-icon" id="btn-open" title="Abrir Projeto"><span id="icon-open"></span></button>
+      <button class="btn btn-icon" id="btn-save" title="Salvar Projeto"><span id="icon-save"></span></button>
+
+      <div class="topbar-divider"></div>
+
+      <button class="btn btn-icon" id="btn-undo" title="Desfazer"><span id="icon-undo"></span></button>
+      <button class="btn btn-icon" id="btn-redo" title="Refazer"><span id="icon-redo"></span></button>
+
+      <div class="topbar-divider"></div>
+
+      <button class="btn" id="btn-export-stl" title="Exportar STL"><span id="icon-stl"></span>STL</button>
+      <button class="btn" id="btn-export-3mf" title="Exportar 3MF"><span id="icon-3mf"></span>3MF</button>
+      <button class="btn" id="btn-export-obj" title="Exportar OBJ"><span id="icon-obj"></span>OBJ</button>
+
+      <div class="topbar-divider"></div>
+
+      <button class="btn btn-icon" id="btn-presets" title="Presets"><span id="icon-presets"></span></button>
+      <button class="btn btn-icon" id="btn-json-export" title="Exportar parâmetros (JSON)"><span id="icon-json-export"></span></button>
+      <button class="btn btn-icon" id="btn-json-import" title="Importar parâmetros (JSON)"><span id="icon-json-import"></span></button>
+      <button class="btn btn-icon" id="btn-screenshot" title="Capturar imagem"><span id="icon-camera"></span></button>
+    </div>
+
+    <span id="project-name-tag" class="btn btn-ghost" style="pointer-events:none; font-family: var(--font-mono); font-size:11.5px;"></span>
+
+    <button class="btn btn-icon theme-toggle" id="btn-theme" title="Alternar tema claro/escuro">
+      <span id="theme-icon"></span>
+    </button>
+  </header>
+
+  <!-- ======================================================== Sidebar -->
+  <nav class="sidebar" id="sidebar"></nav>
+
+  <!-- ========================================================= Viewer -->
+  <main class="viewer">
+    <div class="viewer-canvas-host" id="viewport-host">
+      <div class="viewer-toolbar">
+        <button id="btn-solid" title="Sólido"><span id="icon-solid"></span></button>
+        <button id="btn-wireframe" title="Wireframe"><span id="icon-wireframe"></span></button>
+        <button id="btn-grid" title="Mostrar/ocultar grade"><span id="icon-grid"></span></button>
+        <button id="btn-axes" title="Mostrar/ocultar eixos"><span id="icon-axes"></span></button>
+        <button id="btn-reset-view" title="Reenquadrar modelo"><span id="icon-reset"></span></button>
+        <input type="color" id="bg-color-input" title="Cor de fundo" value="#111114" style="width:34px;height:26px;border:none;background:none;cursor:pointer;padding:0;">
+      </div>
+      <div class="viewer-loading" id="viewer-loading">GERANDO SÓLIDO…</div>
+    </div>
+    <div class="status-bar">
+      <span id="viewport-status">—</span>
+      <span class="brand-tag">VERTOMAKER CREATOR</span>
+    </div>
+  </main>
+
+  <!-- ==================================================== Painel direito -->
+  <aside class="params-panel" id="params-panel"></aside>
+
+  <!-- id=estimator-host is appended inside params-panel by app.js -->
+  <div style="display:none" id="estimator-anchor"></div>
+
+  <!-- =============================================== Barra mobile inferior -->
+  <div class="mobile-tab-bar">
+    <button id="tab-models"><span id="icon-tab-models"></span>Modelos</button>
+    <button id="tab-viewer"><span id="icon-tab-viewer"></span>Visualizar</button>
+    <button id="tab-params"><span id="icon-tab-params"></span>Parâmetros</button>
+  </div>
+</div>
+
+<div id="toast-host"></div>
+
+<!-- ============================================================ Vendor
+     Pinned to three.js r146 - the last release published together with
+     the classic (non-module) build/three.min.js AND examples/js/* addons.
+     This lets the whole app run with plain <script> tags and therefore
+     work from file:// with zero build step, in every major browser. -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/FontLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/geometries/TextGeometry.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/utils/BufferGeometryUtils.js"></script>
+
+<!-- ============================================================== Core -->
+<script src="js/icons.js"></script>
+<script src="js/registry.js"></script>
+<script src="js/csg.js"></script>
+<script src="js/shapes.js"></script>
+<script src="js/estimator.js"></script>
+<script src="js/exporter.js"></script>
+<script src="js/state.js"></script>
+<script src="js/viewer.js"></script>
+<script src="js/ui.js"></script>
+
+<!-- ============================================================ Modelos
+     Biblioteca paramétrica - para adicionar um novo modelo, copie
+     /models/_TEMPLATE.js, preencha os campos e adicione uma linha
+     <script> aqui. Nenhum outro arquivo precisa ser alterado. -->
+<script src="models/caixa-parametrica.js"></script>
+<script src="models/organizador.js"></script>
+<script src="models/chaveiro.js"></script>
+<script src="models/porta-controle.js"></script>
+<script src="models/porta-celular.js"></script>
+<script src="models/suporte-headset.js"></script>
+<script src="models/suporte-notebook.js"></script>
+<script src="models/gancho.js"></script>
+<script src="models/vaso.js"></script>
+<script src="models/placa-texto.js"></script>
+<script src="models/suporte-parede.js"></script>
+<script src="models/porta-cartoes.js"></script>
+<script src="models/modelo-personalizado.js"></script>
+
+<!-- ========================================================= Bootstrap -->
+<script src="js/app.js"></script>
+
+<!-- Icon injection (kept at the end so VertoIcons is already loaded) -->
+<script>
+  (function () {
+    const map = {
+      'brand-logo': 'logo', 'icon-new': 'new', 'icon-open': 'open', 'icon-save': 'save',
+      'icon-undo': 'undo', 'icon-redo': 'redo', 'icon-stl': 'stl', 'icon-3mf': 'threemf', 'icon-obj': 'obj',
+      'icon-presets': 'preset', 'icon-json-export': 'json', 'icon-json-import': 'json', 'icon-camera': 'camera',
+      'icon-solid': 'solid', 'icon-wireframe': 'wireframe', 'icon-grid': 'grid', 'icon-axes': 'axes', 'icon-reset': 'camera',
+      'icon-tab-models': 'menu', 'icon-tab-viewer': 'box', 'icon-tab-params': 'preset', 'theme-icon': 'sun',
+    };
+    for (const [id, icon] of Object.entries(map)) {
+      const node = document.getElementById(id);
+      if (node) node.innerHTML = VertoIcons.get(icon);
+    }
+    // The estimator card lives at the bottom of the params panel.
+    const estimatorHost = document.createElement('div');
+    estimatorHost.id = 'estimator-host';
+    document.getElementById('params-panel').appendChild(estimatorHost);
+  })();
+</script>
+
+</body>
+</html>
