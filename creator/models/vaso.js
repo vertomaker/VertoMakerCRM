@@ -24,29 +24,35 @@
       const rBase = diametroBase / 2, rBoca = diametroBoca / 2, rBarriga = diametroBarriga / 2;
       const bellyY = altura * 0.55;
 
-      // Outer profile: base -> belly (widest point) -> mouth, using smooth control points.
-      const outer = [
-        new THREE.Vector2(Math.max(rBase - 4, 1), 0),
-        new THREE.Vector2(rBase, baseEspessura),
-        new THREE.Vector2(rBarriga, bellyY),
-        new THREE.Vector2(rBoca, altura),
-      ];
-      const outerCurve = new THREE.SplineCurve(outer).getPoints(28);
-
-      // Inner profile (offset inward by wall thickness) mirrored back down to form the rim + floor,
-      // producing a single closed "U" profile so LatheGeometry yields one manifold solid.
       const innerBoca = Math.max(rBoca - parede, 1);
       const innerBarriga = Math.max(rBarriga - parede, 1);
       const innerBase = Math.max(rBase - parede, 1);
-      const inner = [
+
+      // Smooth curved sections for the outer and inner walls only - the
+      // bottom, rim-top and interior-floor segments are straight lines.
+      const outerWall = new THREE.SplineCurve([
+        new THREE.Vector2(rBase, 0),
+        new THREE.Vector2(rBarriga, bellyY),
+        new THREE.Vector2(rBoca, altura),
+      ]).getPoints(24);
+
+      const innerWall = new THREE.SplineCurve([
         new THREE.Vector2(innerBoca, altura),
         new THREE.Vector2(innerBarriga, bellyY),
-        new THREE.Vector2(innerBase, baseEspessura + 0.6),
-        new THREE.Vector2(Math.max(innerBase - 4, 0.5), baseEspessura),
-      ];
-      const innerCurve = new THREE.SplineCurve(inner).getPoints(28);
+        new THREE.Vector2(innerBase, baseEspessura),
+      ]).getPoints(24);
 
-      const profile = [...outerCurve, ...innerCurve];
+      // A single continuous, CLOSED profile - both ends pinned to the
+      // rotation axis (radius 0) so LatheGeometry produces a real,
+      // watertight solid: flat bottom -> outer wall up -> rim top ->
+      // inner wall down -> flat interior floor -> back to the axis.
+      const profile = [
+        new THREE.Vector2(0, 0),           // bottom center (closes automatically)
+        ...outerWall,                       // (rBase,0) up to (rBoca,altura)
+        ...innerWall,                       // (innerBoca,altura) down to (innerBase,baseEspessura)
+        new THREE.Vector2(0, baseEspessura), // interior floor center (closes automatically)
+      ];
+
       const geo = new THREE.LatheGeometry(profile, Math.round(segmentos));
       geo.computeVertexNormals();
       return geo;
