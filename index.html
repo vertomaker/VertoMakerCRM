@@ -1286,6 +1286,7 @@ select.form-input option{background:var(--bg-card);}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Ferramentas</div>
     <div class="nav-item" onclick="navigateTo('calculadora3d',this)"><div class="nav-icon">🧮</div>Calculadora 3D</div>
+    <div class="nav-item" onclick="navigateTo('criador3d',this)"><div class="nav-icon">🧩</div>Criador 3D<span class="nav-badge new">NOVO</span></div>
     <div class="nav-item" onclick="navigateTo('catalogo',this)"><div class="nav-icon">📚</div>Catálogo de Peças</div>
     <div class="nav-item" onclick="navigateTo('cores',this)"><div class="nav-icon">🎨</div>Misturador de Cores</div>
     <div class="nav-item" onclick="navigateTo('prompts',this)"><div class="nav-icon">✨</div>Prompts Bonecos</div>
@@ -1792,6 +1793,16 @@ select.form-input option{background:var(--bg-card);}
     </div>
   </div>
 
+  <!-- CRIADOR 3D — aplicativo independente em /creator, embutido aqui.
+       Para atualizar o Criador 3D (novo modelo, correção, visual), edite
+       apenas os arquivos dentro da pasta /creator - nada aqui precisa
+       mudar. Veja creator/README.md para a arquitetura completa. -->
+  <div class="page" id="page-criador3d" style="padding:0;">
+    <iframe src="creator/index.html" title="VertoMaker Creator"
+      style="width:100%;height:calc(100vh - 64px);border:none;display:block;background:#0a0a0b;"
+      loading="lazy"></iframe>
+  </div>
+
   <!-- MISTURADOR DE CORES -->
   <div class="page" id="page-cores">
     <div class="section-header"><div><div class="section-title">🎨 Misturador de Cores</div><div class="section-sub">REFERÊNCIA VISUAL DE FILAMENTOS</div></div></div>
@@ -2187,6 +2198,7 @@ const pageTitles={
   'trilhas':['Trilhas','Ensino / Trilhas'],
   'guias':['Guias','Ensino / Guias'],
   'calculadora3d':['Calculadora 3D','Ferramentas / Calculadora'],
+  'criador3d':['Criador 3D','Ferramentas / Modelagem Paramétrica'],
   'catalogo':['Catálogo de Peças','Ferramentas / Catálogo'],
   'cores':['Misturador de Cores','Ferramentas / Cores'],
   'prompts':['Prompts Bonecos','Ferramentas / Prompts'],
