@@ -17,6 +17,7 @@
   <!-- ================================================== Barra superior -->
   <header class="topbar">
     <div class="topbar-brand">
+      <button class="btn btn-icon mobile-only" id="btn-toggle-sidebar" title="Modelos"><span id="icon-toggle-sidebar"></span></button>
       <span class="logo" id="brand-logo"></span>
       <h1>Verto<b>Maker</b> Creator</h1>
     </div>
@@ -55,6 +56,9 @@
   <!-- ======================================================== Sidebar -->
   <nav class="sidebar" id="sidebar"></nav>
 
+  <!-- Toque fora do painel (mobile) para fechar -->
+  <div id="mobile-backdrop"></div>
+
   <!-- ========================================================= Viewer -->
   <main class="viewer">
     <div class="viewer-canvas-host" id="viewport-host">
@@ -63,6 +67,7 @@
         <button id="btn-wireframe" title="Wireframe"><span id="icon-wireframe"></span></button>
         <button id="btn-grid" title="Mostrar/ocultar grade"><span id="icon-grid"></span></button>
         <button id="btn-axes" title="Mostrar/ocultar eixos"><span id="icon-axes"></span></button>
+        <button id="btn-dimensions" title="Mostrar/ocultar cotas"><span id="icon-dimensions"></span></button>
         <button id="btn-reset-view" title="Reenquadrar modelo"><span id="icon-reset"></span></button>
         <input type="color" id="bg-color-input" title="Cor de fundo" value="#111114" style="width:34px;height:26px;border:none;background:none;cursor:pointer;padding:0;">
       </div>
@@ -72,23 +77,17 @@
       <span id="viewport-status">—</span>
       <span class="brand-tag">VERTOMAKER CREATOR</span>
     </div>
+
+    <!-- ==================================================== Painel de parâmetros (bottom sheet, estilo MakeLab) -->
+    <div class="bottom-sheet" id="bottom-sheet" data-state="expanded">
+      <button class="sheet-handle" id="sheet-handle" title="Expandir/recolher"><span class="sheet-grip"></span></button>
+      <div class="sheet-tabs" id="sheet-tabs"></div>
+      <div class="sheet-content" id="sheet-content"></div>
+      <div class="sheet-footer">
+        <button class="btn btn-primary btn-generate" id="btn-generate"><span id="icon-generate"></span>Gerar</button>
+      </div>
+    </div>
   </main>
-
-  <!-- ==================================================== Painel direito -->
-  <aside class="params-panel" id="params-panel"></aside>
-
-  <!-- Toque fora do painel (mobile) para fechar -->
-  <div id="mobile-backdrop"></div>
-
-  <!-- id=estimator-host is appended inside params-panel by app.js -->
-  <div style="display:none" id="estimator-anchor"></div>
-
-  <!-- =============================================== Barra mobile inferior -->
-  <div class="mobile-tab-bar">
-    <button id="tab-models"><span id="icon-tab-models"></span>Modelos</button>
-    <button id="tab-viewer"><span id="icon-tab-viewer"></span>Visualizar</button>
-    <button id="tab-params"><span id="icon-tab-params"></span>Parâmetros</button>
-  </div>
 </div>
 
 <div id="toast-host"></div>
@@ -143,17 +142,14 @@
       'brand-logo': 'logo', 'icon-new': 'new', 'icon-open': 'open', 'icon-save': 'save',
       'icon-undo': 'undo', 'icon-redo': 'redo', 'icon-stl': 'stl', 'icon-3mf': 'threemf', 'icon-obj': 'obj',
       'icon-presets': 'preset', 'icon-json-export': 'json', 'icon-json-import': 'json', 'icon-camera': 'camera',
-      'icon-solid': 'solid', 'icon-wireframe': 'wireframe', 'icon-grid': 'grid', 'icon-axes': 'axes', 'icon-reset': 'camera',
-      'icon-tab-models': 'menu', 'icon-tab-viewer': 'box', 'icon-tab-params': 'preset', 'theme-icon': 'sun',
+      'icon-solid': 'solid', 'icon-wireframe': 'wireframe', 'icon-grid': 'grid', 'icon-axes': 'axes',
+      'icon-dimensions': 'ruler', 'icon-reset': 'camera', 'icon-toggle-sidebar': 'menu', 'icon-generate': 'sparkle',
+      'theme-icon': 'sun',
     };
     for (const [id, icon] of Object.entries(map)) {
       const node = document.getElementById(id);
       if (node) node.innerHTML = VertoIcons.get(icon);
     }
-    // The estimator card lives at the bottom of the params panel.
-    const estimatorHost = document.createElement('div');
-    estimatorHost.id = 'estimator-host';
-    document.getElementById('params-panel').appendChild(estimatorHost);
   })();
 </script>
 
