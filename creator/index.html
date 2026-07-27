@@ -23,12 +23,6 @@
     </div>
 
     <div class="topbar-actions">
-      <button class="btn btn-icon" id="btn-new" title="Novo Projeto"><span id="icon-new"></span></button>
-      <button class="btn btn-icon" id="btn-open" title="Abrir Projeto"><span id="icon-open"></span></button>
-      <button class="btn btn-icon" id="btn-save" title="Salvar Projeto"><span id="icon-save"></span></button>
-
-      <div class="topbar-divider"></div>
-
       <button class="btn btn-icon" id="btn-undo" title="Desfazer"><span id="icon-undo"></span></button>
       <button class="btn btn-icon" id="btn-redo" title="Refazer"><span id="icon-redo"></span></button>
 
@@ -40,10 +34,7 @@
 
       <div class="topbar-divider"></div>
 
-      <button class="btn btn-icon" id="btn-presets" title="Presets"><span id="icon-presets"></span></button>
-      <button class="btn btn-icon" id="btn-json-export" title="Exportar parâmetros (JSON)"><span id="icon-json-export"></span></button>
-      <button class="btn btn-icon" id="btn-json-import" title="Importar parâmetros (JSON)"><span id="icon-json-import"></span></button>
-      <button class="btn btn-icon" id="btn-screenshot" title="Capturar imagem"><span id="icon-camera"></span></button>
+      <button class="btn btn-icon" id="btn-more" title="Mais opções"><span id="icon-more"></span></button>
     </div>
 
     <span id="project-name-tag" class="btn btn-ghost" style="pointer-events:none; font-family: var(--font-mono); font-size:11.5px;"></span>
@@ -139,10 +130,8 @@
 <script>
   (function () {
     const map = {
-      'brand-logo': 'logo', 'icon-new': 'new', 'icon-open': 'open', 'icon-save': 'save',
-      'icon-undo': 'undo', 'icon-redo': 'redo', 'icon-stl': 'stl', 'icon-3mf': 'threemf', 'icon-obj': 'obj',
-      'icon-presets': 'preset', 'icon-json-export': 'json', 'icon-json-import': 'json', 'icon-camera': 'camera',
-      'icon-solid': 'solid', 'icon-wireframe': 'wireframe', 'icon-grid': 'grid', 'icon-axes': 'axes',
+      'brand-logo': 'logo', 'icon-undo': 'undo', 'icon-redo': 'redo', 'icon-stl': 'stl', 'icon-3mf': 'threemf', 'icon-obj': 'obj',
+      'icon-more': 'more', 'icon-solid': 'solid', 'icon-wireframe': 'wireframe', 'icon-grid': 'grid', 'icon-axes': 'axes',
       'icon-dimensions': 'ruler', 'icon-reset': 'camera', 'icon-toggle-sidebar': 'menu', 'icon-generate': 'sparkle',
       'theme-icon': 'sun',
     };
