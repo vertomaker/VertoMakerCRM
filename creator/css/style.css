@@ -85,6 +85,7 @@ svg{ width: 18px; height: 18px; display:block; }
 }
 
 .mobile-only{ display:none; }
+#app > *{ min-width: 0; }
 
 /* ---------------------------------------------------------------- Topbar */
 .topbar{
@@ -111,7 +112,7 @@ svg{ width: 18px; height: 18px; display:block; }
 }
 .topbar-brand h1 b{ color: var(--red); font-weight: 700; }
 
-.topbar-actions{ display:flex; align-items:center; gap:6px; overflow-x:auto; flex:1; scrollbar-width:none; }
+.topbar-actions{ display:flex; align-items:center; gap:6px; overflow-x:auto; flex:1; min-width: 0; scrollbar-width:none; }
 .topbar-actions::-webkit-scrollbar{ display:none; }
 .topbar-spacer{ flex: 1; }
 .topbar-divider{ width:1px; height:26px; background:var(--border); margin: 0 4px; flex-shrink:0; }
@@ -187,8 +188,9 @@ svg{ width: 18px; height: 18px; display:block; }
   position: relative;
   display: flex; flex-direction: column;
   background: var(--bg);
+  min-width: 0; overflow: hidden;
 }
-.viewer-canvas-host{ flex: 1; position: relative; }
+.viewer-canvas-host{ flex: 1; position: relative; min-width: 0; }
 .viewer-canvas-host canvas{ display:block; width:100%; height:100%; }
 
 .viewer-toolbar{
@@ -217,6 +219,7 @@ svg{ width: 18px; height: 18px; display:block; }
   display:flex; align-items:center; justify-content: space-between;
   padding: 0 14px; background: var(--bg-2); border-top: 1px solid var(--border);
   font-family: var(--font-mono); font-size: 11px; color: var(--text-mute); letter-spacing: .3px;
+  min-width: 0; overflow: hidden;
 }
 #viewport-status{ white-space: nowrap; overflow:hidden; text-overflow:ellipsis; }
 .status-bar .brand-tag{ color: var(--red); font-weight: 700; }
@@ -242,14 +245,15 @@ svg{ width: 18px; height: 18px; display:block; }
 .sheet-handle:hover .sheet-grip{ background: var(--red); }
 
 .sheet-tabs{
-  display: flex; align-items: center; gap: 4px; padding: 0 14px 10px;
-  overflow-x: auto; border-bottom: 1px solid var(--border-soft); flex-shrink: 0; scrollbar-width: none;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 0 14px 10px;
+  overflow-x: hidden; max-height: 104px; overflow-y: auto;
+  border-bottom: 1px solid var(--border-soft); flex-shrink: 0; min-width: 0;
 }
 .sheet-tabs::-webkit-scrollbar{ display:none; }
 .sheet-model-name{
   display:flex; align-items:center; gap:6px; font-family: var(--font-display); font-weight: 700;
-  font-size: 13.5px; padding-right: 10px; margin-right: 4px; border-right: 1px solid var(--border);
-  white-space: nowrap; flex-shrink: 0;
+  font-size: 13.5px; padding: 6px 0 8px; width: 100%;
+  white-space: nowrap; flex-shrink: 0; border-bottom: 1px solid var(--border-soft); margin-bottom: 4px;
 }
 .sheet-model-name .model-icon{ color: var(--red); }
 .sheet-tab{
@@ -260,7 +264,7 @@ svg{ width: 18px; height: 18px; display:block; }
 .sheet-tab:hover{ background: var(--card-hover); color: var(--text); }
 .sheet-tab.active{ background: var(--red); color: #fff; }
 
-.sheet-content{ flex: 1; overflow-y: auto; padding: 14px 16px 6px; min-height: 80px; }
+.sheet-content{ flex: 1; overflow-y: auto; overflow-x: hidden; padding: 14px 16px 6px; min-height: 80px; min-width: 0; }
 .sheet-footer{
   padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0)); border-top: 1px solid var(--border); flex-shrink: 0;
 }
@@ -272,8 +276,8 @@ svg{ width: 18px; height: 18px; display:block; }
 }
 
 .param-row{ margin-bottom: 16px; }
-.param-row-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 7px; }
-.param-row-head label{ font-size: 12.5px; color: var(--text-dim); margin: 0; }
+.param-row-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 7px; min-width: 0; }
+.param-row-head label{ font-size: 12.5px; color: var(--text-dim); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .param-value{ display:flex; align-items:center; gap:5px; flex-shrink: 0; }
 .param-row label{ display:block; font-size: 12.5px; color: var(--text-dim); margin-bottom: 5px; }
 .param-control{ display:flex; align-items:center; gap:8px; }
