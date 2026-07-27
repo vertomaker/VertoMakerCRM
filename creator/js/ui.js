@@ -136,11 +136,15 @@
       onChange(num);
     }
     numberInput.addEventListener('input', (e) => commit(e.target.value));
+    numberInput.addEventListener('blur', (e) => commit(e.target.value));
     slider.addEventListener('input', (e) => commit(e.target.value));
 
     return el('div', { class: 'param-row' }, [
-      el('label', {}, param.label),
-      el('div', { class: 'param-control' }, [slider, numberInput, unitLabel]),
+      el('div', { class: 'param-row-head' }, [
+        el('label', {}, param.label),
+        el('div', { class: 'param-value' }, [numberInput, unitLabel]),
+      ]),
+      el('div', { class: 'param-control' }, [slider]),
     ]);
   }
 

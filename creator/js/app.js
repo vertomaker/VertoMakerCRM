@@ -175,23 +175,10 @@
 
   // ---------------------------------------------------------------- Topbar
   function wireTopbar() {
-    document.getElementById('btn-new').addEventListener('click', () => {
-      const def = VertoRegistry.get(VertoState.getModelId());
-      if (def) selectModel(def.id);
-      VertoState.newProject();
-      updateProjectTag();
-      VertoUI.toast('Novo projeto iniciado.');
-    });
-
-    document.getElementById('btn-open').addEventListener('click', openProjectsModal);
-    document.getElementById('btn-save').addEventListener('click', openSaveModal);
     document.getElementById('btn-export-stl').addEventListener('click', () => doExport('stl'));
     document.getElementById('btn-export-3mf').addEventListener('click', () => doExport('3mf'));
     document.getElementById('btn-export-obj').addEventListener('click', () => doExport('obj'));
-    document.getElementById('btn-presets').addEventListener('click', openPresetsModal);
-    document.getElementById('btn-json-export').addEventListener('click', exportJSON);
-    document.getElementById('btn-json-import').addEventListener('click', importJSON);
-    document.getElementById('btn-screenshot').addEventListener('click', captureScreenshot);
+    document.getElementById('btn-more').addEventListener('click', openMoreMenu);
 
     els.btnUndo.addEventListener('click', () => VertoState.undo());
     els.btnRedo.addEventListener('click', () => VertoState.redo());
@@ -200,6 +187,35 @@
       const next = VertoState.getTheme() === 'dark' ? 'light' : 'dark';
       VertoState.setTheme(next);
     });
+  }
+
+  // Less-frequent actions live behind a single "•••" button so the
+  // topbar never overflows/clips on narrow phone screens.
+  function openMoreMenu() {
+    function row(icon, label, onClick) {
+      const r = VertoUI.el('button', { class: 'list-row more-menu-row' }, [
+        VertoUI.el('span', { class: 'model-icon', html: VertoIcons.get(icon) }),
+        VertoUI.el('span', { class: 'name' }, label),
+      ]);
+      r.addEventListener('click', () => { modal.close(); onClick(); });
+      return r;
+    }
+    const list = VertoUI.el('div', {}, [
+      row('new', 'Novo projeto', () => {
+        const def = VertoRegistry.get(VertoState.getModelId());
+        if (def) selectModel(def.id);
+        VertoState.newProject();
+        updateProjectTag();
+        VertoUI.toast('Novo projeto iniciado.');
+      }),
+      row('open', 'Abrir projeto', openProjectsModal),
+      row('save', 'Salvar projeto', openSaveModal),
+      row('preset', 'Presets', openPresetsModal),
+      row('json', 'Exportar parâmetros (JSON)', exportJSON),
+      row('json', 'Importar parâmetros (JSON)', importJSON),
+      row('camera', 'Capturar imagem', captureScreenshot),
+    ]);
+    var modal = VertoUI.openModal({ title: 'Mais opções', bodyEl: list, actions: [{ label: 'Fechar', primary: true, onClick: () => modal.close() }] });
   }
 
   function updateUndoRedoButtons() {

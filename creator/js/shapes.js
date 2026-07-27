@@ -51,6 +51,22 @@
     return result.geometry;
   }
 
+  /** An open-BOTTOM rounded box shell - i.e. a lid: solid "ceiling" of
+   *  `topThickness` at the top, hollow skirt walls hanging down, open
+   *  underneath so it can slip down over a box. */
+  function roundedLidShell(width, depthY, totalHeight, wall, radius, topThickness) {
+    const outerMesh = new THREE.Mesh(roundedBox(width, depthY, totalHeight, radius));
+    const innerW = Math.max(width - 2 * wall, 0.5);
+    const innerD = Math.max(depthY - 2 * wall, 0.5);
+    const innerH = Math.max(totalHeight - topThickness, 0.1);
+    const innerR = Math.max(radius - wall, 0);
+    const innerGeo = roundedBox(innerW, innerD, innerH + 1, innerR);
+    innerGeo.translate(0, -1, 0); // extend the cavity below the bottom face so the boolean cut is clean
+    const innerMesh = new THREE.Mesh(innerGeo);
+    const result = VertoCSG.subtract(outerMesh, innerMesh);
+    return result.geometry;
+  }
+
   /** A cylinder mesh oriented as a drilling tool along an arbitrary axis, for use as a CSG subtraction brush. */
   function holeCylinder(diameter, length, position, axis) {
     axis = axis || 'y';
@@ -141,6 +157,7 @@
     roundedRectShape,
     roundedBox,
     roundedBoxShell,
+    roundedLidShell,
     holeCylinder,
     mergeGeometries,
     textGeometry,
