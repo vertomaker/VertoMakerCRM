@@ -47,6 +47,21 @@ creator/
 └── assets/                    # reservado para outros recursos estáticos (fontes, texturas, etc.)
 ```
 
+## Cache do navegador (importante ao atualizar arquivos)
+
+Todos os `<link>`/`<script>` locais em `index.html` têm um sufixo
+`?v=AAAAMMDDx` (ex.: `css/style.css?v=20260727a`). Isso existe porque
+navegadores (e o `<iframe>` do painel principal) guardam CSS/JS em
+cache agressivamente - sem esse sufixo, depois de editar um arquivo o
+usuário pode continuar vendo a versão antiga por dias.
+
+**Sempre que editar qualquer arquivo em `css/`, `js/` ou `models/`,
+troque o valor de `?v=...` em TODAS as tags de `creator/index.html`**
+(pode ser qualquer string nova, ex. incrementar a letra final ou usar
+a data do dia). Se o `creator/` estiver embutido via `<iframe>` no
+painel principal, atualize também o `?v=...` do `src` do iframe em
+`index.html` (busque por `criador3d-frame`).
+
 ## Como adicionar um novo modelo (sem tocar em mais nada)
 
 1. Copie `models/_TEMPLATE.js` para `models/meu-modelo.js`.
