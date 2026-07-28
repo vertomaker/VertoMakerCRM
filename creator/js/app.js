@@ -88,6 +88,12 @@
       } else {
         setDirty(true);
       }
+    } else if (event === 'params-live') {
+      // Continuous slider drag / number-field typing: just flag as dirty.
+      // Deliberately skip renderSheet() here - rebuilding the panel while
+      // an <input> is focused would destroy it and dismiss the keyboard.
+      setDirty(true);
+      return;
     } else if (event === 'theme-changed') {
       applyTheme(VertoState.getTheme());
     } else if (event === 'favorites-changed') {
@@ -103,12 +109,16 @@
       { tabsHost: els.sheetTabs, contentHost: els.sheetContent },
       def,
       VertoState.getParams(),
-      { onChange: onParamChange, onInfoTabShown: () => renderEstimatorIfPossible() }
+      { onChange: onParamChange, onLiveChange: onParamLiveChange, onInfoTabShown: () => renderEstimatorIfPossible() }
     );
   }
 
   function onParamChange(key, value) {
     VertoState.setParam(key, value);
+  }
+
+  function onParamLiveChange(key, value) {
+    VertoState.setParamLive(key, value);
   }
 
   function setDirty(state) {

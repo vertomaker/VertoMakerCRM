@@ -89,7 +89,8 @@
   }
 
   // -------------------------------------------------------- Param panel
-  function paramControl(param, value, onChange) {
+  function paramControl(param, value, onChange, onLive) {
+    onLive = onLive || onChange;
     const unit = param.unit || (param.type === 'number' ? 'mm' : '');
 
     if (param.type === 'select') {
@@ -114,7 +115,9 @@
 
     if (param.type === 'text') {
       const input = el('input', { type: 'text', value: value ?? '', maxlength: param.maxLength || 40, class: 'param-text' });
-      input.addEventListener('input', (e) => onChange(e.target.value));
+      input.addEventListener('input', (e) => onLive(e.target.value));
+      input.addEventListener('change', (e) => onChange(e.target.value));
+      input.addEventListener('blur', (e) => onChange(e.target.value));
       return el('div', { class: 'param-row' }, [
         el('label', {}, param.label),
         el('div', { class: 'param-control' }, [input]),
@@ -127,17 +130,33 @@
     const slider = el('input', { type: 'range', min, max, step, value, class: 'param-slider' });
     const unitLabel = el('span', { class: 'param-unit' }, unit);
 
-    function commit(v) {
+    function clamp(v) {
       let num = parseFloat(v);
       if (isNaN(num)) num = param.default ?? min;
-      num = Math.min(max, Math.max(min, num));
+      return Math.min(max, Math.max(min, num));
+    }
+    // While actively dragging/typing: update live (no history, no re-render)
+    // so the on-screen keyboard and slider drag never get interrupted.
+    numberInput.addEventListener('input', (e) => {
+      const raw = parseFloat(e.target.value);
+      if (!isNaN(raw)) { slider.value = Math.min(max, Math.max(min, raw)); onLive(raw); }
+    });
+    slider.addEventListener('input', (e) => {
+      const num = clamp(e.target.value);
+      numberInput.value = num;
+      onLive(num);
+    });
+    // On release/blur: normalize + clamp + commit (this is the point where
+    // a full panel re-render is safe, since the field is no longer focused).
+    function commit(v) {
+      const num = clamp(v);
       numberInput.value = num;
       slider.value = num;
       onChange(num);
     }
-    numberInput.addEventListener('input', (e) => commit(e.target.value));
+    numberInput.addEventListener('change', (e) => commit(e.target.value));
     numberInput.addEventListener('blur', (e) => commit(e.target.value));
-    slider.addEventListener('input', (e) => commit(e.target.value));
+    slider.addEventListener('change', (e) => commit(e.target.value));
 
     return el('div', { class: 'param-row' }, [
       el('div', { class: 'param-row-head' }, [
@@ -157,7 +176,7 @@
    */
   function renderBottomSheet(refs, modelDef, params, callbacks) {
     const { tabsHost, contentHost } = refs;
-    const { onChange } = callbacks;
+    const { onChange, onLiveChange } = callbacks;
 
     const groups = [];
     const groupParams = {};
@@ -181,7 +200,11 @@
       }
       for (const p of groupParams[activeTab] || []) {
         if (p.showIf && !p.showIf(params)) continue;
-        contentHost.appendChild(paramControl(p, params[p.key], (v) => onChange(p.key, v)));
+        contentHost.appendChild(paramControl(
+          p, params[p.key],
+          (v) => onChange(p.key, v),
+          onLiveChange ? (v) => onLiveChange(p.key, v) : undefined
+        ));
       }
     }
 

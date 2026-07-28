@@ -82,6 +82,16 @@
     getModelId() { return current.modelId; },
     getParams() { return current.params; },
 
+    /** Continuous updates while dragging a slider or typing a number/text
+     *  field. Updates the value immediately (so Generate always sees the
+     *  latest input) but does NOT touch undo history or trigger a full
+     *  panel re-render - re-rendering on every keystroke was destroying
+     *  the focused <input> and dismissing the on-screen keyboard. */
+    setParamLive(key, value) {
+      current.params[key] = value;
+      emit('params-live', { params: current.params, key, value });
+    },
+
     setParam(key, value, opts = {}) {
       current.params[key] = value;
       if (!opts.skipHistory && !suppressHistory) {
