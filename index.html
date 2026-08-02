@@ -183,6 +183,63 @@ select.form-input option{background:var(--bg-card);}
 .color-mixer{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
 .color-preview{height:100px;border-radius:12px;border:1px solid var(--border);transition:background .5s;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;text-shadow:0 1px 3px rgba(0,0,0,.5);}
 
+/* ===================== VERTOCOLOR LAB ===================== */
+.cl-tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:0;margin-bottom:20px;border-bottom:1px solid var(--border);-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.cl-tabs::-webkit-scrollbar{display:none;}
+.cl-tab{flex:0 0 auto;padding:10px 14px;border-radius:8px 8px 0 0;font-size:12.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;border:1px solid transparent;border-bottom:2px solid transparent;transition:all .15s;}
+.cl-tab:hover{color:var(--text-primary);background:rgba(255,107,53,.05);}
+.cl-tab.active{color:var(--accent2);background:rgba(255,107,53,.09);border-color:rgba(255,107,53,.2);border-bottom-color:var(--accent2);}
+.cl-panel{display:none;}
+.cl-panel.active{display:block;animation:clFadeIn .25s ease;}
+@keyframes clFadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+.cl-grid2{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:start;}
+.cl-slot{background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;}
+.cl-slot-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.cl-swatch{width:34px;height:34px;border-radius:8px;border:2px solid var(--border);flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);}
+.cl-slot-select{flex:1;}
+.cl-slot-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;}
+.cl-slot-fields .form-input{padding:7px 8px;font-size:12.5px;}
+.cl-result-swatch{height:130px;border-radius:14px;border:1px solid var(--border);position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:flex-start;}
+.cl-result-swatch span{background:rgba(8,12,18,.65);backdrop-filter:blur(2px);padding:5px 10px;border-radius:0 8px 0 0;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;letter-spacing:.5px;}
+.cl-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;}
+.cl-metric{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 6px;text-align:center;}
+.cl-metric-label{font-size:8.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px;text-transform:uppercase;}
+.cl-metric-value{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;margin-top:4px;color:var(--text-primary);}
+.cl-paint-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;max-height:340px;overflow-y:auto;padding-right:4px;}
+.cl-paint-chip{cursor:pointer;text-align:center;padding:7px 4px;border-radius:8px;border:1px solid var(--border);background:var(--bg-secondary);transition:transform .15s,border-color .15s;}
+.cl-paint-chip:hover{transform:translateY(-2px);border-color:var(--accent2);}
+.cl-paint-chip.sel{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2);}
+.cl-paint-chip .sw{width:100%;height:30px;border-radius:6px;margin-bottom:5px;border:1px solid rgba(255,255,255,.08);}
+.cl-paint-chip .nm{font-size:9px;color:var(--text-secondary);line-height:1.2;}
+.cl-paint-chip .cd{font-size:8px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;}
+.cl-brand-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.cl-chip-btn{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:600;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;transition:all .15s;}
+.cl-chip-btn.active{background:rgba(255,107,53,.15);border-color:var(--accent2);color:var(--accent2);}
+.cl-recipe-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:12.5px;}
+.cl-recipe-item .l{display:flex;align-items:center;gap:8px;}
+.cl-recipe-item .dot{width:16px;height:16px;border-radius:4px;border:1px solid rgba(255,255,255,.15);}
+.cl-deltae{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.cl-deltae.excelente{background:rgba(0,255,136,.15);color:var(--success);}
+.cl-deltae.boa{background:rgba(0,212,255,.15);color:var(--accent);}
+.cl-deltae.aceitavel{background:rgba(255,204,0,.15);color:var(--warning);}
+.cl-deltae.fraca{background:rgba(255,51,85,.15);color:var(--danger);}
+.cl-cat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:transform .15s,border-color .15s;cursor:pointer;}
+.cl-cat-card:hover{transform:translateY(-2px);border-color:var(--accent2);}
+.cl-cat-img{height:74px;position:relative;}
+.cl-cat-body{padding:12px 14px;}
+.cl-cat-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;margin-bottom:3px;}
+.cl-cat-tag{font-size:9.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:1px;}
+.cl-fav-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px;}
+.cl-suggestion{background:var(--bg-secondary);border:1px solid rgba(255,107,53,.25);border-left:3px solid var(--accent2);border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:12.5px;line-height:1.5;}
+.cl-suggestion b{color:var(--accent2);}
+.cl-empty{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;}
+input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
+@media (max-width:900px){
+  .cl-grid2{grid-template-columns:1fr;}
+  .cl-slot-fields{grid-template-columns:repeat(3,1fr);}
+  .cl-metrics{grid-template-columns:repeat(2,1fr);}
+}
+
 /* TRILHAS */
 .trilha-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all .3s;cursor:pointer;position:relative;overflow:hidden;}
 .trilha-card:hover{border-color:var(--border-bright);transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.3);}
@@ -889,6 +946,44 @@ select.form-input option{background:var(--bg-card);}
   </div>
 </div>
 
+<!-- Modal: ColorLab - Seletor de Tinta -->
+<div class="modal-overlay" id="modal-cl-paint-picker">
+  <div class="modal wide">
+    <div class="modal-title">🧪 Escolher Tinta</div>
+    <div class="form-group" style="margin-bottom:10px"><input type="text" class="form-input" id="cl-picker-busca" placeholder="🔍 Buscar por nome ou código..." oninput="clRenderPaintPicker()"></div>
+    <div class="cl-brand-filter" id="cl-picker-filtro"></div>
+    <div class="cl-paint-grid" id="cl-picker-grid"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cl-paint-picker')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: ColorLab - Salvar Favorito -->
+<div class="modal-overlay" id="modal-cl-fav">
+  <div class="modal">
+    <div class="modal-title">💾 Salvar nos Favoritos</div>
+    <div class="cl-result-swatch" id="cl-fav-preview" style="height:70px;margin-bottom:14px"><span></span></div>
+    <div class="form-group"><label class="form-label">Nome da mistura</label><input type="text" class="form-input" id="cl-fav-nome" placeholder="Ex: Madeira Envelhecida"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cl-fav')">Cancelar</button>
+      <button class="btn btn-primary" onclick="clConfirmarSalvarFavorito()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: ColorLab - Detalhe de Receita -->
+<div class="modal-overlay" id="modal-cl-receita">
+  <div class="modal wide">
+    <div class="modal-title" id="cl-receita-titulo">📚 Receita</div>
+    <div id="cl-receita-conteudo"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cl-receita')">Fechar</button>
+      <button class="btn btn-primary" id="cl-receita-usar-btn">🎨 Usar na Mistura Manual</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Config salvas -->
 <div class="modal-overlay" id="modal-config-ok">
   <div class="modal" style="max-width:380px;text-align:center">
@@ -1289,6 +1384,7 @@ select.form-input option{background:var(--bg-card);}
     <div class="nav-item" onclick="navigateTo('criador3d',this)"><div class="nav-icon">🧩</div>Criador 3D<span class="nav-badge new">NOVO</span></div>
     <div class="nav-item" onclick="navigateTo('catalogo',this)"><div class="nav-icon">📚</div>Catálogo de Peças</div>
     <div class="nav-item" onclick="navigateTo('cores',this)"><div class="nav-icon">🎨</div>Misturador de Cores</div>
+    <div class="nav-item" onclick="navigateTo('colorlab',this)"><div class="nav-icon">🧪</div>VertoColor Lab<span class="nav-badge new">NOVO</span></div>
     <div class="nav-item" onclick="navigateTo('prompts',this)"><div class="nav-icon">✨</div>Prompts Bonecos</div>
     <div class="nav-item" onclick="navigateTo('links',this)"><div class="nav-icon">🔗</div>Links Úteis</div>
   </div>
@@ -1840,6 +1936,198 @@ select.form-input option{background:var(--bg-card);}
     </div>
   </div>
 
+  <!-- VERTOCOLOR LAB -->
+  <div class="page" id="page-colorlab">
+    <div class="section-header">
+      <div><div class="section-title">🧪 VertoColor Lab</div><div class="section-sub">LABORATÓRIO DE MISTURA DE TINTAS PARA PEÇAS 3D</div></div>
+    </div>
+
+    <div class="cl-tabs" id="cl-tabs">
+      <div class="cl-tab active" data-tab="manual" onclick="clSwitchTab('manual')">🎨 Mistura Manual</div>
+      <div class="cl-tab" data-tab="encontrar" onclick="clSwitchTab('encontrar')">🎯 Encontrar Mistura</div>
+      <div class="cl-tab" data-tab="receitas" onclick="clSwitchTab('receitas')">📚 Receitas Oficiais</div>
+      <div class="cl-tab" data-tab="favoritos" onclick="clSwitchTab('favoritos')">❤️ Favoritos</div>
+      <div class="cl-tab" data-tab="historico" onclick="clSwitchTab('historico')">🧪 Histórico</div>
+      <div class="cl-tab" data-tab="comparador" onclick="clSwitchTab('comparador')">📊 Comparador</div>
+      <div class="cl-tab" data-tab="correcao" onclick="clSwitchTab('correcao')">🧠 Correção Inteligente</div>
+      <div class="cl-tab" data-tab="config" onclick="clSwitchTab('config')">⚙️ Configurações</div>
+    </div>
+
+    <!-- MISTURA MANUAL -->
+    <div class="cl-panel active" id="cl-panel-manual">
+      <div class="cl-grid2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🎨 Tintas na Mistura</div>
+            <button class="btn btn-ghost" id="cl-btn-add-slot" onclick="clOpenPaintPicker('slot')">+ Adicionar Tinta</button>
+          </div>
+          <div class="card-body">
+            <div id="cl-slots-container"></div>
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px">
+              <div class="form-group"><label class="form-label">Volume Total (ml)</label><input type="number" class="form-input" id="cl-total-ml" value="10" min="0.5" step="0.5" oninput="clRenderSlots();clComputeMix();"></div>
+              <div class="form-group"><label class="form-label">Gotas por ml</label><input type="number" class="form-input" id="cl-gotas-ml" value="20" min="1" step="1" oninput="clRenderSlots();clComputeMix();"></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header"><div class="card-title">🧫 Resultado</div></div>
+            <div class="card-body">
+              <div class="cl-result-swatch" id="cl-result-swatch"><span id="cl-result-hex">#FFFFFF</span></div>
+              <div class="cl-metrics">
+                <div class="cl-metric"><div class="cl-metric-label">RGB</div><div class="cl-metric-value" id="cl-metric-rgb">-</div></div>
+                <div class="cl-metric"><div class="cl-metric-label">HSL</div><div class="cl-metric-value" id="cl-metric-hsl">-</div></div>
+                <div class="cl-metric"><div class="cl-metric-label">CIELAB</div><div class="cl-metric-value" id="cl-metric-lab">-</div></div>
+                <div class="cl-metric"><div class="cl-metric-label">Total</div><div class="cl-metric-value" id="cl-metric-total">0%</div></div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:14px">
+                <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="clGerarMistura()">🎲 Gerar</button>
+                <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="clOpenSaveFavorito()">💾 Favoritar</button>
+              </div>
+              <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:8px" onclick="clLimparMistura()">🗑️ Limpar Mistura</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENCONTRAR MISTURA -->
+    <div class="cl-panel" id="cl-panel-encontrar">
+      <div class="cl-grid2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🎯 Cor Desejada</div></div>
+          <div class="card-body">
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="form-group"><label class="form-label">Seletor de Cor</label><input type="color" class="form-input" id="cl-target-picker" value="#8b5a2b" style="height:44px;padding:4px;cursor:pointer" oninput="clSyncTargetFromPicker()"></div>
+              <div class="form-group"><label class="form-label">HEX</label><input type="text" class="form-input" id="cl-target-hex" value="#8B5A2B" oninput="clSyncTargetFromHex()"></div>
+            </div>
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+              <div class="form-group"><label class="form-label">R</label><input type="number" class="form-input" id="cl-target-r" min="0" max="255" oninput="clSyncTargetFromRgb()"></div>
+              <div class="form-group"><label class="form-label">G</label><input type="number" class="form-input" id="cl-target-g" min="0" max="255" oninput="clSyncTargetFromRgb()"></div>
+              <div class="form-group"><label class="form-label">B</label><input type="number" class="form-input" id="cl-target-b" min="0" max="255" oninput="clSyncTargetFromRgb()"></div>
+            </div>
+            <div class="form-group" style="margin-top:10px">
+              <label class="form-label">Importar Imagem (clique na imagem para escolher a cor)</label>
+              <input type="file" accept="image/*" class="form-input" id="cl-target-image-input" onchange="clLoadTargetImage(event)">
+              <canvas id="cl-target-canvas" style="max-width:100%;border-radius:8px;margin-top:8px;display:none;cursor:crosshair;border:1px solid var(--border)" onclick="clPickImageColor(event)"></canvas>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px" onclick="clEncontrarMistura()">🎯 Calcular Mistura Ideal</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📋 Receita Calculada</div></div>
+          <div class="card-body" id="cl-encontrar-resultado">
+            <div class="cl-empty">Defina uma cor desejada e toque em "Calcular Mistura Ideal".</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECEITAS OFICIAIS -->
+    <div class="cl-panel" id="cl-panel-receitas">
+      <div class="cl-brand-filter" id="cl-receitas-filtro"></div>
+      <div class="cl-paint-grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));max-height:none" id="cl-receitas-grid"></div>
+    </div>
+
+    <!-- FAVORITOS -->
+    <div class="cl-panel" id="cl-panel-favoritos">
+      <div class="form-group" style="max-width:340px;margin-bottom:16px"><input type="text" class="form-input" id="cl-fav-busca" placeholder="🔍 Buscar favorito..." oninput="clRenderFavoritos()"></div>
+      <div style="display:grid;gap:10px" id="cl-favoritos-lista"></div>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div class="cl-panel" id="cl-panel-historico">
+      <div class="section-header" style="margin-bottom:14px">
+        <div class="form-group" style="max-width:340px"><input type="text" class="form-input" id="cl-hist-busca" placeholder="🔍 Buscar no histórico..." oninput="clRenderHistorico()"></div>
+        <button class="btn btn-ghost" onclick="clExportarHistorico()">⬇️ Exportar Histórico</button>
+      </div>
+      <div style="display:grid;gap:10px" id="cl-historico-lista"></div>
+    </div>
+
+    <!-- COMPARADOR -->
+    <div class="cl-panel" id="cl-panel-comparador">
+      <div class="cl-grid2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🅰️ Cor Desejada</div></div>
+          <div class="card-body">
+            <input type="color" class="form-input" id="cl-cmp-a" value="#8b5a2b" style="height:44px;padding:4px;cursor:pointer;margin-bottom:10px" oninput="clComparar()">
+            <input type="text" class="form-input" id="cl-cmp-a-hex" value="#8B5A2B" oninput="clSyncCmpA()">
+            <div class="cl-result-swatch" style="height:80px;margin-top:10px" id="cl-cmp-a-swatch"><span>A</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🅱️ Cor Obtida</div></div>
+          <div class="card-body">
+            <input type="color" class="form-input" id="cl-cmp-b" value="#7a4a20" style="height:44px;padding:4px;cursor:pointer;margin-bottom:10px" oninput="clComparar()">
+            <input type="text" class="form-input" id="cl-cmp-b-hex" value="#7A4A20" oninput="clSyncCmpB()">
+            <div class="cl-result-swatch" style="height:80px;margin-top:10px" id="cl-cmp-b-swatch"><span>B</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-body" style="text-align:center" id="cl-cmp-resultado"></div>
+      </div>
+    </div>
+
+    <!-- CORREÇÃO INTELIGENTE -->
+    <div class="cl-panel" id="cl-panel-correcao">
+      <div class="cl-grid2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🧠 O que está errado na mistura?</div></div>
+          <div class="card-body">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Descreva o problema com a cor atual da <b>Mistura Manual</b>. Ex: "está muito escuro", "muito vermelho", "sem saturação"...</div>
+            <textarea class="form-input" id="cl-correcao-texto" rows="3" placeholder="Está muito escuro e um pouco amarelado..."></textarea>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px" onclick="clAnalisarCorrecao()">🧠 Analisar</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">💡 Sugestões</div></div>
+          <div class="card-body" id="cl-correcao-resultado">
+            <div class="cl-empty">Gere uma mistura na aba "Mistura Manual" e descreva o problema para receber sugestões.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIGURAÇÕES -->
+    <div class="cl-panel" id="cl-panel-config">
+      <div class="cl-grid2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 Estatísticas</div></div>
+          <div class="card-body">
+            <div class="cl-metrics" style="grid-template-columns:repeat(2,1fr)">
+              <div class="cl-metric"><div class="cl-metric-label">Tintas Cadastradas</div><div class="cl-metric-value" id="cl-stat-tintas">-</div></div>
+              <div class="cl-metric"><div class="cl-metric-label">Marcas</div><div class="cl-metric-value" id="cl-stat-marcas">-</div></div>
+              <div class="cl-metric"><div class="cl-metric-label">Favoritos</div><div class="cl-metric-value" id="cl-stat-favoritos">-</div></div>
+              <div class="cl-metric"><div class="cl-metric-label">Histórico</div><div class="cl-metric-value" id="cl-stat-historico">-</div></div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:14px;line-height:1.6">O VertoColor Lab hoje suporta a linha <b>Acrilex</b> (Fosca, Brilhante, Metálica e Fluorescente). Novas marcas — Corfix, Vallejo, Citadel, AK Interactive, Army Painter, True Colors, Tamiya — podem ser adicionadas manualmente ou por importação abaixo, sem alterar o motor de cores.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">➕ Cadastrar Tinta Personalizada</div></div>
+          <div class="card-body">
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="form-group"><label class="form-label">Marca</label><input type="text" class="form-input" id="cl-cp-marca" placeholder="Ex: Corfix"></div>
+              <div class="form-group"><label class="form-label">Nome</label><input type="text" class="form-input" id="cl-cp-nome" placeholder="Ex: Verde Oliva"></div>
+            </div>
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+              <div class="form-group"><label class="form-label">Código</label><input type="text" class="form-input" id="cl-cp-codigo" placeholder="Ex: CX-014"></div>
+              <div class="form-group"><label class="form-label">Categoria</label><input type="text" class="form-input" id="cl-cp-categoria" placeholder="Ex: Verde"></div>
+            </div>
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+              <div class="form-group"><label class="form-label">Cor</label><input type="color" class="form-input" id="cl-cp-hex" value="#556b2f" style="height:44px;padding:4px;cursor:pointer"></div>
+              <div class="form-group"><label class="form-label">Acabamento</label><select class="form-input" id="cl-cp-acabamento"><option>Fosco</option><option>Brilhante</option><option>Metálico</option><option>Fluorescente</option><option>Acetinado</option></select></div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px" onclick="clAddCustomPaint()">➕ Adicionar Tinta</button>
+            <div style="margin-top:16px" id="cl-custom-lista"></div>
+            <div style="font-size:10.5px;color:var(--text-muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">📥 Importação de marcas inteiras via JSON/CSV está prevista na arquitetura (uma tinta por linha com marca, nome, código, categoria e HEX) e será habilitada em uma próxima atualização.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- PROMPTS BONECOS -->
   <div class="page" id="page-prompts">
     <div class="section-header">
@@ -2044,6 +2332,7 @@ function coletarDB(){
     clientes, nextClienteId,
     config, calOffset,
     orcamentosSalvos, nextOrcSalvoId,
+    clFavoritos, clNextFavId, clHistorico, clNextHistId, clCustomPaints, clNextCustomId,
   };
 }
 
@@ -2107,6 +2396,13 @@ function aplicarDB(db){
 
   orcamentosSalvos = Array.isArray(db.orcamentosSalvos) ? db.orcamentosSalvos : [];
   nextOrcSalvoId = db.nextOrcSalvoId || (Math.max(0,...orcamentosSalvos.map(o=>o.id||0))+1);
+
+  clFavoritos = Array.isArray(db.clFavoritos) ? db.clFavoritos : [];
+  clNextFavId = db.clNextFavId || (Math.max(0,...clFavoritos.map(f=>f.id||0))+1);
+  clHistorico = Array.isArray(db.clHistorico) ? db.clHistorico : [];
+  clNextHistId = db.clNextHistId || (Math.max(0,...clHistorico.map(h=>h.id||0))+1);
+  clCustomPaints = Array.isArray(db.clCustomPaints) ? db.clCustomPaints : [];
+  clNextCustomId = db.clNextCustomId || (clCustomPaints.length+1);
 
   return true;
 }
@@ -2201,6 +2497,7 @@ const pageTitles={
   'criador3d':['Criador 3D','Ferramentas / Modelagem Paramétrica'],
   'catalogo':['Catálogo de Peças','Ferramentas / Catálogo'],
   'cores':['Misturador de Cores','Ferramentas / Cores'],
+  'colorlab':['VertoColor Lab','Ferramentas / Laboratório de Tintas'],
   'prompts':['Prompts Bonecos','Ferramentas / Prompts'],
   'links':['Links Úteis','Ferramentas / Links'],
   'configuracoes':['Configurações','Sistema / Configurações'],
@@ -2224,6 +2521,7 @@ function navigateTo(pageId,el){
   if(pageId==='estatisticas')renderDashboardFinanceiro();
   if(pageId==='orcamento')renderAlertaEstoqueOrcamento();
   if(pageId==='historico-orcamentos')renderHistoricoOrcamentos();
+  if(pageId==='colorlab'){ clInit(); }
   if(pageId==='criador3d'){
     sizeCriador3DFrame();
     setTimeout(sizeCriador3DFrame,150);
@@ -4820,6 +5118,716 @@ function detectarPromptInstalacao(){
       const navItem = document.getElementById("nav-instalar-item");
       if(navItem) navItem.style.display = "flex";
     }
+  }
+}
+
+// ===================== VERTOCOLOR LAB =====================
+// Módulo de laboratório de mistura de tintas. Motor de cor próprio (RGB<->Lab, DeltaE2000,
+// mistura ponderada em espaço Lab) + banco de tintas Acrilex + favoritos/histórico persistidos
+// junto com o vtm_db do app principal.
+
+// --- Banco de tintas (Acrilex) ---
+const CL_ACRILEX_FOSCA = [
+  ['501','Azul Turquesa','#00a99d','Azul'],['502','Azul Cobalto','#1c39bb','Azul'],
+  ['503','Azul Celeste','#4a9fe0','Azul'],['504','Amarelo Limão','#e8e828','Amarelo'],
+  ['505','Amarelo Ouro','#f2b705','Amarelo'],['506','Cerâmica','#b5651d','Marrom'],
+  ['507','Vermelho Fogo','#e0301e','Vermelho'],['508','Vermelho Escarlate','#ff2400','Vermelho'],
+  ['509','Vermelho Carmim','#960018','Vermelho'],['510','Verde Folha','#4c9a2a','Verde'],
+  ['511','Verde Bandeira','#009739','Verde'],['512','Verde Veronese','#6b9362','Verde'],
+  ['513','Verde Musgo','#6b8e23','Verde'],['514','Terra Queimada','#7b3f00','Marrom'],
+  ['516','Violeta','#6a3fa0','Violeta'],['517','Laranja','#ff7f00','Laranja'],
+  ['518','Salmão','#fa8072','Pele'],['519','Branco','#ffffff','Neutro'],
+  ['520','Preto','#141414','Neutro'],['525','Camurça','#c19a6b','Pele'],
+  ['527','Pink','#ff69b4','Rosa'],['528','Lilás','#c8a2c8','Violeta'],
+  ['529','Marfim','#f2ead3','Neutro'],['531','Marrom','#6b3410','Marrom'],
+  ['535','Azul Mar','#1a6b96','Azul'],['536','Amarelo Cádmio','#ffde00','Amarelo'],
+  ['537','Rosa','#f4a6bb','Rosa'],['538','Amarelo Pele','#f0c090','Pele'],
+  ['539','Siena Natural','#b06a2c','Marrom'],['540','Violeta Cobalto','#5b3a8e','Violeta'],
+  ['541','Vermelho Vivo','#e0102b','Vermelho'],['542','Rosa Escuro','#d1477a','Rosa'],
+  ['543','Azul Ultramar','#1b1f8a','Azul'],['544','Azul Marinho','#0a1a4a','Azul'],
+  ['545','Verde Oliva','#6f7222','Verde'],['546','Verde Pinheiro','#1c3b2e','Verde'],
+  ['549','Magenta','#d6006e','Rosa'],['550','Púrpura','#7d1a5b','Violeta'],
+  ['551','Sépia','#5b3a29','Marrom'],['552','Verde Glacial','#a8d8c9','Verde'],
+  ['560','Azul Caribe','#1fb6c9','Azul'],['565','Vinho','#5e1224','Vermelho'],
+  ['566','Pêssego','#f6b895','Pele'],['567','Rosa Chá','#e8a9b8','Rosa'],
+].map(([codigo,nome,hex,categoria])=>({id:'ax-f-'+codigo,marca:'Acrilex',linha:'Fosca',nome,codigo,categoria,hex,acabamento:'Fosco'}));
+
+const CL_ACRILEX_BRILHANTE = [
+  ['BR-01','Branco','#ffffff','Neutro'],['BR-02','Preto','#141414','Neutro'],
+  ['BR-03','Amarelo','#ffde00','Amarelo'],['BR-04','Vermelho','#e0301e','Vermelho'],
+  ['BR-05','Azul','#1c39bb','Azul'],['BR-06','Verde','#4c9a2a','Verde'],
+  ['BR-07','Laranja','#ff7f00','Laranja'],['BR-08','Roxo','#6a3fa0','Violeta'],
+  ['BR-09','Rosa','#f4a6bb','Rosa'],['BR-10','Marrom','#6b3410','Marrom'],
+].map(([codigo,nome,hex,categoria])=>({id:'ax-b-'+codigo,marca:'Acrilex',linha:'Brilhante',nome,codigo,categoria,hex,acabamento:'Brilhante'}));
+
+const CL_ACRILEX_METALICA = [
+  ['MT-01','Dourado','#d4af37','Metálico'],['MT-02','Prata','#c0c0c0','Metálico'],
+  ['MT-03','Cobre','#b87333','Metálico'],['MT-04','Bronze','#8c7853','Metálico'],
+  ['MT-05','Pérola','#e8e4d8','Metálico'],['MT-06','Grafite','#4a4a4a','Metálico'],
+].map(([codigo,nome,hex,categoria])=>({id:'ax-m-'+codigo,marca:'Acrilex',linha:'Metálica',nome,codigo,categoria,hex,acabamento:'Metálico'}));
+
+const CL_ACRILEX_FLUOR = [
+  ['FL-01','Amarelo Fluor','#ccff00','Amarelo'],['FL-02','Verde Fluor','#39ff14','Verde'],
+  ['FL-03','Rosa Fluor','#ff10f0','Rosa'],['FL-04','Laranja Fluor','#ff5f1f','Laranja'],
+  ['FL-05','Azul Fluor','#1f51ff','Azul'],['FL-06','Vermelho Fluor','#ff073a','Vermelho'],
+].map(([codigo,nome,hex,categoria])=>({id:'ax-fl-'+codigo,marca:'Acrilex',linha:'Fluorescente',nome,codigo,categoria,hex,acabamento:'Fluorescente'}));
+
+const CL_ACRILEX_PAINTS = [...CL_ACRILEX_FOSCA, ...CL_ACRILEX_BRILHANTE, ...CL_ACRILEX_METALICA, ...CL_ACRILEX_FLUOR];
+
+// --- Receitas oficiais (biblioteca inicial) ---
+const CL_RECEITAS = [
+  {id:1,titulo:'Madeira Envelhecida',categoria:'Madeira',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Verniz fosco',obs:'Aplique em camadas finas e faça dry brush com Siena Natural por cima.',itens:[['ax-f-551',45],['ax-f-514',35],['ax-f-519',20]]},
+  {id:2,titulo:'Madeira Clara de Pinho',categoria:'Madeira',dificuldade:'Fácil',acabamento:'Acetinado',verniz:'Verniz acetinado',obs:'Boa base para dry brush com Amarelo Pele.',itens:[['ax-f-539',50],['ax-f-538',30],['ax-f-519',20]]},
+  {id:3,titulo:'Metal Dourado Envelhecido',categoria:'Metais',dificuldade:'Médio',acabamento:'Metálico',verniz:'Verniz fosco (após lavagem de sépia)',obs:'Finalize com um wash de Sépia diluída para realçar os baixos-relevos.',itens:[['ax-m-MT-01',70],['ax-m-MT-03',20],['ax-f-520',10]]},
+  {id:4,titulo:'Prata Envelhecida (Aço)',categoria:'Metais',dificuldade:'Médio',acabamento:'Metálico',verniz:'Verniz fosco',obs:'Ideal para armas e armaduras de miniaturas.',itens:[['ax-m-MT-02',75],['ax-m-MT-06',20],['ax-f-520',5]]},
+  {id:5,titulo:'Ferrugem Clássica',categoria:'Ferrugem',dificuldade:'Médio',acabamento:'Fosco',verniz:'Fosco',obs:'Aplique com esponja natural sobre metal para textura irregular.',itens:[['ax-f-506',40],['ax-f-539',30],['ax-f-507',20],['ax-f-520',10]]},
+  {id:6,titulo:'Concreto Cinza',categoria:'Concreto',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Fosco',obs:'Adicione textura com areia fina antes de pintar para mais realismo.',itens:[['ax-m-MT-06',35],['ax-f-519',45],['ax-f-520',20]]},
+  {id:7,titulo:'Pedra Rochosa',categoria:'Pedras',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Fosco',obs:'Faça dry brush com camadas cada vez mais claras.',itens:[['ax-f-551',30],['ax-m-MT-06',30],['ax-f-519',40]]},
+  {id:8,titulo:'Couro Marrom',categoria:'Couro',dificuldade:'Fácil',acabamento:'Acetinado',verniz:'Acetinado',obs:'Finalize com brilho leve nas dobras para simular desgaste.',itens:[['ax-f-531',55],['ax-f-514',25],['ax-f-538',20]]},
+  {id:9,titulo:'Pele Clara',categoria:'Pele',dificuldade:'Médio',acabamento:'Fosco',verniz:'Fosco',obs:'Use sombras com Siena Natural e luzes com Marfim.',itens:[['ax-f-538',60],['ax-f-518',25],['ax-f-519',15]]},
+  {id:10,titulo:'Pele Escura',categoria:'Pele',dificuldade:'Médio',acabamento:'Fosco',verniz:'Fosco',obs:'Adicione toques de Vermelho Carmim nas áreas de sombra para naturalidade.',itens:[['ax-f-551',45],['ax-f-514',35],['ax-f-509',20]]},
+  {id:11,titulo:'Grama e Vegetação',categoria:'Natureza',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Fosco',obs:'Varie a proporção entre bases para criar manchas naturais na cena.',itens:[['ax-f-510',50],['ax-f-545',30],['ax-f-536',20]]},
+  {id:12,titulo:'Poção Mágica (Fantasia)',categoria:'Fantasia',dificuldade:'Fácil',acabamento:'Brilhante',verniz:'Brilhante / Gloss',obs:'Aplicar sobre resina transparente para efeito de líquido.',itens:[['ax-b-BR-05',50],['ax-fl-FL-02',30],['ax-f-519',20]]},
+  {id:13,titulo:'Base para Miniaturas (Cascalho)',categoria:'Miniaturas',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Fosco',obs:'Pinte a base texturizada e faça dry brush claro por cima.',itens:[['ax-f-551',40],['ax-m-MT-06',35],['ax-f-519',25]]},
+  {id:14,titulo:'Bronze Antigo',categoria:'Metais',dificuldade:'Médio',acabamento:'Metálico',verniz:'Fosco (após lavagem)',obs:'Ótimo para estátuas e detalhes decorativos impressos em 3D.',itens:[['ax-m-MT-04',60],['ax-m-MT-03',25],['ax-f-520',15]]},
+];
+
+let clFavoritos = [];
+let clHistorico = [];
+let clCustomPaints = [];
+let clNextFavId = 1;
+let clNextHistId = 1;
+let clNextCustomId = 1;
+
+let clMisturaSlots = [];
+let clNextSlotId = 1;
+let clPickerContext = 'slot';
+let clPickerBrandFilter = 'todas';
+let clLastEncontrada = null;
+let clInitialized = false;
+
+function clGetAllPaints(){ return CL_ACRILEX_PAINTS.concat(clCustomPaints); }
+function clGetPaint(id){ return clGetAllPaints().find(p=>p.id===id); }
+
+// --- Motor de cor: conversões RGB <-> Lab, DeltaE2000, mistura ponderada ---
+function clHexToRgb(hex){
+  hex = (hex||'#000000').replace('#','');
+  if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+  const num = parseInt(hex,16);
+  return {r:(num>>16)&255, g:(num>>8)&255, b:num&255};
+}
+function clRgbToHex(r,g,b){
+  const c=v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0');
+  return '#'+c(r)+c(g)+c(b);
+}
+function clRgbToXyz(r,g,b){
+  let [rr,gg,bb] = [r/255,g/255,b/255].map(c=> c>0.04045 ? Math.pow((c+0.055)/1.055,2.4) : c/12.92);
+  rr*=100; gg*=100; bb*=100;
+  return {
+    x: rr*0.4124+gg*0.3576+bb*0.1805,
+    y: rr*0.2126+gg*0.7152+bb*0.0722,
+    z: rr*0.0193+gg*0.1192+bb*0.9505,
+  };
+}
+function clXyzToLab(x,y,z){
+  const refX=95.047, refY=100.0, refZ=108.883;
+  const f=t=> t>0.008856 ? Math.cbrt(t) : (7.787*t+16/116);
+  const fx=f(x/refX), fy=f(y/refY), fz=f(z/refZ);
+  return {l:116*fy-16, a:500*(fx-fy), b:200*(fy-fz)};
+}
+function clRgbToLab(r,g,b){ const xyz=clRgbToXyz(r,g,b); return clXyzToLab(xyz.x,xyz.y,xyz.z); }
+function clLabToXyz(l,a,b){
+  const refX=95.047, refY=100.0, refZ=108.883;
+  const fy=(l+16)/116, fx=a/500+fy, fz=fy-b/200;
+  const inv=t=> Math.pow(t,3)>0.008856 ? Math.pow(t,3) : (t-16/116)/7.787;
+  return {x:refX*inv(fx), y:refY*inv(fy), z:refZ*inv(fz)};
+}
+function clXyzToRgb(x,y,z){
+  x/=100; y/=100; z/=100;
+  let r = x*3.2406+y*-1.5372+z*-0.4986;
+  let g = x*-0.9689+y*1.8758+z*0.0415;
+  let b = x*0.0557+y*-0.2040+z*1.0570;
+  [r,g,b]=[r,g,b].map(c=> c>0.0031308 ? 1.055*Math.pow(c,1/2.4)-0.055 : 12.92*c);
+  const clamp=v=>Math.max(0,Math.min(255,Math.round(v*255)));
+  return {r:clamp(r),g:clamp(g),b:clamp(b)};
+}
+function clLabToRgb(l,a,b){ const xyz=clLabToXyz(l,a,b); return clXyzToRgb(xyz.x,xyz.y,xyz.z); }
+function clRgbToHsl(r,g,b){
+  r/=255;g/=255;b/=255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b);
+  let h,s,l=(max+min)/2;
+  if(max===min){h=s=0;}
+  else{
+    const d=max-min;
+    s=l>0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max){
+      case r: h=(g-b)/d+(g<b?6:0); break;
+      case g: h=(b-r)/d+2; break;
+      default: h=(r-g)/d+4;
+    }
+    h*=60;
+  }
+  return {h:Math.round(h),s:Math.round(s*100),l:Math.round(l*100)};
+}
+function clDeltaE2000(lab1,lab2){
+  const {l:L1,a:a1,b:b1}=lab1, {l:L2,a:a2,b:b2}=lab2;
+  const C1=Math.sqrt(a1*a1+b1*b1), C2=Math.sqrt(a2*a2+b2*b2);
+  const Cbar=(C1+C2)/2;
+  const G=0.5*(1-Math.sqrt(Math.pow(Cbar,7)/(Math.pow(Cbar,7)+Math.pow(25,7))));
+  const a1p=(1+G)*a1, a2p=(1+G)*a2;
+  const C1p=Math.sqrt(a1p*a1p+b1*b1), C2p=Math.sqrt(a2p*a2p+b2*b2);
+  const h1p=(Math.atan2(b1,a1p)*180/Math.PI+360)%360;
+  const h2p=(Math.atan2(b2,a2p)*180/Math.PI+360)%360;
+  const dLp=L2-L1, dCp=C2p-C1p;
+  let dhp;
+  if(C1p*C2p===0) dhp=0;
+  else if(Math.abs(h2p-h1p)<=180) dhp=h2p-h1p;
+  else if(h2p-h1p>180) dhp=h2p-h1p-360;
+  else dhp=h2p-h1p+360;
+  const dHp=2*Math.sqrt(C1p*C2p)*Math.sin((dhp*Math.PI/180)/2);
+  const Lbarp=(L1+L2)/2, Cbarp=(C1p+C2p)/2;
+  let hbarp;
+  if(C1p*C2p===0) hbarp=h1p+h2p;
+  else if(Math.abs(h1p-h2p)<=180) hbarp=(h1p+h2p)/2;
+  else if(h1p+h2p<360) hbarp=(h1p+h2p+360)/2;
+  else hbarp=(h1p+h2p-360)/2;
+  const T=1-0.17*Math.cos((hbarp-30)*Math.PI/180)+0.24*Math.cos(2*hbarp*Math.PI/180)+0.32*Math.cos((3*hbarp+6)*Math.PI/180)-0.20*Math.cos((4*hbarp-63)*Math.PI/180);
+  const dTheta=30*Math.exp(-Math.pow((hbarp-275)/25,2));
+  const Rc=2*Math.sqrt(Math.pow(Cbarp,7)/(Math.pow(Cbarp,7)+Math.pow(25,7)));
+  const Sl=1+(0.015*Math.pow(Lbarp-50,2))/Math.sqrt(20+Math.pow(Lbarp-50,2));
+  const Sc=1+0.045*Cbarp;
+  const Sh=1+0.015*Cbarp*T;
+  const Rt=-Math.sin(2*dTheta*Math.PI/180)*Rc;
+  return Math.sqrt(Math.pow(dLp/Sl,2)+Math.pow(dCp/Sc,2)+Math.pow(dHp/Sh,2)+Rt*(dCp/Sc)*(dHp/Sh));
+}
+function clDeltaEQuality(de){ return de<=1?'excelente':de<=3?'boa':de<=6?'aceitavel':'fraca'; }
+function clPrecisionFromDeltaE(de){ return Math.max(0,Math.min(100,Math.round(100-de*6))); }
+function clMixLabWeighted(items){
+  const sum = items.reduce((s,it)=>s+it.w,0);
+  if(sum<=0) return null;
+  let l=0,a=0,b=0;
+  items.forEach(it=>{ const w=it.w/sum; l+=it.lab.l*w; a+=it.lab.a*w; b+=it.lab.b*w; });
+  return {l,a,b};
+}
+function clMixPaints(items){
+  const withLab = items.filter(it=>it.pct>0).map(it=>({lab:clRgbToLab(clHexToRgb(it.hex).r,clHexToRgb(it.hex).g,clHexToRgb(it.hex).b), w:it.pct}));
+  if(!withLab.length) return null;
+  const lab = clMixLabWeighted(withLab);
+  const rgb = clLabToRgb(lab.l,lab.a,lab.b);
+  return {rgb, lab, hex:clRgbToHex(rgb.r,rgb.g,rgb.b)};
+}
+
+// --- Mistura Manual ---
+function clRenderSlots(){
+  const cont = document.getElementById('cl-slots-container');
+  if(!cont) return;
+  const totalMl = parseFloat(document.getElementById('cl-total-ml').value)||10;
+  const gotasMl = parseFloat(document.getElementById('cl-gotas-ml').value)||20;
+  if(!clMisturaSlots.length){
+    cont.innerHTML = '<div class="cl-empty">Toque em "+ Adicionar Tinta" para começar (até 5 tintas por mistura).</div>';
+    document.getElementById('cl-btn-add-slot').disabled=false;
+    return;
+  }
+  cont.innerHTML = clMisturaSlots.map(slot=>{
+    const paint = clGetPaint(slot.paintId);
+    if(!paint) return '';
+    const ml = (totalMl*slot.pct/100);
+    const gotas = Math.round(ml*gotasMl);
+    return `<div class="cl-slot">
+      <div class="cl-slot-head">
+        <div class="cl-swatch" style="background:${paint.hex}"></div>
+        <div class="cl-slot-select">
+          <div style="font-weight:600;font-size:13px">${paint.nome}</div>
+          <div style="font-size:10.5px;color:var(--text-muted)">${paint.marca} ${paint.linha} · ${paint.codigo}</div>
+        </div>
+        <button class="btn btn-ghost" style="padding:6px 9px" onclick="clRemoveSlot(${slot.slotId})">✕</button>
+      </div>
+      <input type="range" class="cl-slider" min="0" max="100" step="1" value="${slot.pct}" oninput="clSetSlotPct(${slot.slotId},this.value)">
+      <div class="cl-slot-fields">
+        <div><label class="form-label">%</label><input type="number" class="form-input" value="${slot.pct}" min="0" max="100" onchange="clSetSlotPct(${slot.slotId},this.value)"></div>
+        <div><label class="form-label">ml</label><input type="number" class="form-input" value="${ml.toFixed(2)}" min="0" step="0.1" onchange="clSetSlotMl(${slot.slotId},this.value)"></div>
+        <div><label class="form-label">gotas</label><input type="number" class="form-input" value="${gotas}" min="0" step="1" onchange="clSetSlotGotas(${slot.slotId},this.value)"></div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('cl-btn-add-slot').disabled = clMisturaSlots.length>=5;
+}
+function clSetSlotPct(id,val){
+  const slot = clMisturaSlots.find(s=>s.slotId===id); if(!slot) return;
+  slot.pct = Math.max(0,Math.min(100,parseFloat(val)||0));
+  clRenderSlots(); clComputeMix();
+}
+function clSetSlotMl(id,val){
+  const totalMl = parseFloat(document.getElementById('cl-total-ml').value)||10;
+  const ml = Math.max(0,parseFloat(val)||0);
+  clSetSlotPct(id, totalMl>0 ? (ml/totalMl*100) : 0);
+}
+function clSetSlotGotas(id,val){
+  const gotasMl = parseFloat(document.getElementById('cl-gotas-ml').value)||20;
+  const ml = Math.max(0,parseFloat(val)||0)/gotasMl;
+  clSetSlotMl(id, ml);
+}
+function clAddSlot(){ clOpenPaintPicker('slot'); }
+function clAddPaintToSlot(paintId, pctOverride){
+  if(clMisturaSlots.length>=5){ showToast('Máximo de 5 tintas por mistura.','⚠️'); return; }
+  const pct = pctOverride!=null ? pctOverride : (clMisturaSlots.length===0?100:20);
+  clMisturaSlots.push({slotId:clNextSlotId++, paintId, pct});
+  clRenderSlots(); clComputeMix();
+}
+function clRemoveSlot(id){
+  clMisturaSlots = clMisturaSlots.filter(s=>s.slotId!==id);
+  clRenderSlots(); clComputeMix();
+}
+function clLimparMistura(){
+  clMisturaSlots = []; clNextSlotId=1;
+  clRenderSlots(); clComputeMix();
+}
+function clComputeCurrentMix(){
+  const items = clMisturaSlots.map(s=>{ const p=clGetPaint(s.paintId); return p?{hex:p.hex,pct:s.pct}:null; }).filter(Boolean);
+  return clMixPaints(items);
+}
+function clComputeMix(){
+  const swatchEl = document.getElementById('cl-result-swatch');
+  if(!swatchEl) return;
+  const mix = clComputeCurrentMix();
+  const totalPct = clMisturaSlots.reduce((s,x)=>s+x.pct,0);
+  document.getElementById('cl-metric-total').textContent = Math.round(totalPct)+'%';
+  document.getElementById('cl-metric-total').style.color = Math.abs(totalPct-100)<=2 ? 'var(--success)' : 'var(--warning)';
+  if(!mix){
+    swatchEl.style.background = 'var(--bg-secondary)';
+    document.getElementById('cl-result-hex').textContent = '—';
+    document.getElementById('cl-metric-rgb').textContent = '-';
+    document.getElementById('cl-metric-hsl').textContent = '-';
+    document.getElementById('cl-metric-lab').textContent = '-';
+    return;
+  }
+  swatchEl.style.background = mix.hex;
+  document.getElementById('cl-result-hex').textContent = mix.hex.toUpperCase();
+  document.getElementById('cl-metric-rgb').textContent = `${mix.rgb.r}, ${mix.rgb.g}, ${mix.rgb.b}`;
+  const hsl = clRgbToHsl(mix.rgb.r,mix.rgb.g,mix.rgb.b);
+  document.getElementById('cl-metric-hsl').textContent = `${hsl.h}°, ${hsl.s}%, ${hsl.l}%`;
+  document.getElementById('cl-metric-lab').textContent = `${mix.lab.l.toFixed(1)}, ${mix.lab.a.toFixed(1)}, ${mix.lab.b.toFixed(1)}`;
+  return mix;
+}
+function clGerarMistura(){
+  const mix = clComputeMix();
+  if(!mix){ showToast('Adicione ao menos uma tinta antes de gerar.','⚠️'); return; }
+  clAddHistorico({tipo:'manual', hex:mix.hex, receita:clMisturaSlots.map(s=>({paintId:s.paintId,pct:s.pct}))});
+  showToast('🎨 Mistura gerada e registrada no histórico!');
+}
+function clOpenSaveFavorito(){
+  const mix = clComputeMix();
+  if(!mix){ showToast('Gere uma mistura antes de favoritar.','⚠️'); return; }
+  document.getElementById('cl-fav-preview').style.background = mix.hex;
+  document.getElementById('cl-fav-preview').querySelector('span') ? null : null;
+  document.getElementById('cl-fav-nome').value = '';
+  openModal('modal-cl-fav');
+}
+function clConfirmarSalvarFavorito(){
+  const mix = clComputeMix();
+  if(!mix) return;
+  const nome = document.getElementById('cl-fav-nome').value.trim() || 'Mistura sem nome';
+  clFavoritos.unshift({id:clNextFavId++, nome, hex:mix.hex, receita:clMisturaSlots.map(s=>({paintId:s.paintId,pct:s.pct})), ts:Date.now()});
+  closeModal('modal-cl-fav');
+  salvarDB();
+  clRenderFavoritos(); clRenderStats();
+  showToast('❤️ Mistura salva nos favoritos!');
+}
+
+// --- Seletor de tinta (modal) ---
+function clOpenPaintPicker(context){
+  clPickerContext = context;
+  clPickerBrandFilter = 'todas';
+  clRenderPickerFilters();
+  clRenderPaintPicker();
+  document.getElementById('cl-picker-busca').value='';
+  openModal('modal-cl-paint-picker');
+}
+function clRenderPickerFilters(){
+  const linhas = ['todas','Fosca','Brilhante','Metálica','Fluorescente','Personalizada'];
+  document.getElementById('cl-picker-filtro').innerHTML = linhas.map(l=>
+    `<button type="button" class="cl-chip-btn ${clPickerBrandFilter===l?'active':''}" onclick="clSetPickerFilter('${l}')">${l==='todas'?'Todas':l}</button>`
+  ).join('');
+}
+function clSetPickerFilter(l){ clPickerBrandFilter=l; clRenderPickerFilters(); clRenderPaintPicker(); }
+function clRenderPaintPicker(){
+  const busca = (document.getElementById('cl-picker-busca').value||'').toLowerCase();
+  const list = clGetAllPaints().filter(p=>
+    (clPickerBrandFilter==='todas' || p.linha===clPickerBrandFilter) &&
+    (!busca || p.nome.toLowerCase().includes(busca) || p.codigo.toLowerCase().includes(busca))
+  );
+  const grid = document.getElementById('cl-picker-grid');
+  if(!list.length){ grid.innerHTML = '<div class="cl-empty" style="grid-column:1/-1">Nenhuma tinta encontrada.</div>'; return; }
+  grid.innerHTML = list.map(p=>
+    `<div class="cl-paint-chip" onclick="clSelectPickerPaint('${p.id}')">
+      <div class="sw" style="background:${p.hex}"></div>
+      <div class="nm">${p.nome}</div>
+      <div class="cd">${p.codigo}</div>
+    </div>`
+  ).join('');
+}
+function clSelectPickerPaint(id){
+  if(clPickerContext==='slot') clAddPaintToSlot(id);
+  closeModal('modal-cl-paint-picker');
+}
+
+// --- Encontrar Mistura ---
+function clSetTargetFromHex(hex){
+  hex = hex.toUpperCase();
+  document.getElementById('cl-target-picker').value = hex;
+  document.getElementById('cl-target-hex').value = hex;
+  const rgb = clHexToRgb(hex);
+  document.getElementById('cl-target-r').value = rgb.r;
+  document.getElementById('cl-target-g').value = rgb.g;
+  document.getElementById('cl-target-b').value = rgb.b;
+}
+function clSyncTargetFromPicker(){ clSetTargetFromHex(document.getElementById('cl-target-picker').value); }
+function clSyncTargetFromHex(){
+  let hex = document.getElementById('cl-target-hex').value.trim();
+  if(!/^#?[0-9a-fA-F]{6}$/.test(hex)) return;
+  if(hex[0]!=='#') hex='#'+hex;
+  clSetTargetFromHex(hex);
+}
+function clSyncTargetFromRgb(){
+  const r=Math.max(0,Math.min(255,parseInt(document.getElementById('cl-target-r').value)||0));
+  const g=Math.max(0,Math.min(255,parseInt(document.getElementById('cl-target-g').value)||0));
+  const b=Math.max(0,Math.min(255,parseInt(document.getElementById('cl-target-b').value)||0));
+  const hex = clRgbToHex(r,g,b);
+  document.getElementById('cl-target-picker').value = hex;
+  document.getElementById('cl-target-hex').value = hex.toUpperCase();
+}
+let clTargetCtx = null;
+function clLoadTargetImage(ev){
+  const file = ev.target.files && ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      const canvas = document.getElementById('cl-target-canvas');
+      const maxW = 420;
+      const scale = Math.min(1, maxW/img.width);
+      canvas.width = img.width*scale;
+      canvas.height = img.height*scale;
+      canvas.style.display = 'block';
+      clTargetCtx = canvas.getContext('2d');
+      clTargetCtx.drawImage(img,0,0,canvas.width,canvas.height);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function clPickImageColor(ev){
+  if(!clTargetCtx) return;
+  const canvas = ev.target;
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.round((ev.clientX-rect.left)*(canvas.width/rect.width));
+  const y = Math.round((ev.clientY-rect.top)*(canvas.height/rect.height));
+  const px = clTargetCtx.getImageData(x,y,1,1).data;
+  clSetTargetFromHex(clRgbToHex(px[0],px[1],px[2]));
+  showToast('🎯 Cor capturada da imagem!');
+}
+function clFindBestMix(targetLab){
+  const scored = clGetAllPaints().map(p=>{
+    const rgb = clHexToRgb(p.hex);
+    const lab = clRgbToLab(rgb.r,rgb.g,rgb.b);
+    return {paint:p, lab, de:clDeltaE2000(lab,targetLab)};
+  }).sort((a,b)=>a.de-b.de);
+  let best = {combo:[{paint:scored[0].paint,pct:100}], de:scored[0].de};
+  const top7 = scored.slice(0,7);
+  for(let i=0;i<top7.length;i++){
+    for(let j=i+1;j<top7.length;j++){
+      for(let w=5; w<=95; w+=5){
+        const mix = clMixLabWeighted([{lab:top7[i].lab,w},{lab:top7[j].lab,w:100-w}]);
+        const de = clDeltaE2000(mix,targetLab);
+        if(de<best.de) best={combo:[{paint:top7[i].paint,pct:w},{paint:top7[j].paint,pct:100-w}], de};
+      }
+    }
+  }
+  const top5 = scored.slice(0,5);
+  for(let i=0;i<top5.length;i++)for(let j=i+1;j<top5.length;j++)for(let k=j+1;k<top5.length;k++){
+    for(let w1=10; w1<=80; w1+=10){
+      for(let w2=10; w2<=90-w1; w2+=10){
+        const w3=100-w1-w2; if(w3<10) continue;
+        const mix = clMixLabWeighted([{lab:top5[i].lab,w:w1},{lab:top5[j].lab,w:w2},{lab:top5[k].lab,w:w3}]);
+        const de = clDeltaE2000(mix,targetLab);
+        if(de<best.de) best={combo:[{paint:top5[i].paint,pct:w1},{paint:top5[j].paint,pct:w2},{paint:top5[k].paint,pct:w3}], de};
+      }
+    }
+  }
+  return best;
+}
+function clEncontrarMistura(){
+  const targetHex = document.getElementById('cl-target-hex').value;
+  const targetRgb = clHexToRgb(targetHex);
+  const targetLab = clRgbToLab(targetRgb.r,targetRgb.g,targetRgb.b);
+  const best = clFindBestMix(targetLab);
+  const mixResult = clMixPaints(best.combo.map(c=>({hex:c.paint.hex,pct:c.pct})));
+  const totalMl = parseFloat(document.getElementById('cl-total-ml').value)||10;
+  const gotasMl = parseFloat(document.getElementById('cl-gotas-ml').value)||20;
+  const precision = clPrecisionFromDeltaE(best.de);
+  const qualidade = clDeltaEQuality(best.de);
+  let html = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="cl-result-swatch" style="height:70px;background:${targetHex}"><span>Desejada</span></div>
+      <div class="cl-result-swatch" style="height:70px;background:${mixResult.hex}"><span>Obtida</span></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <span class="cl-deltae ${qualidade}">ΔE ${best.de.toFixed(2)}</span>
+      <span style="font-size:12px;color:var(--text-muted)">Precisão estimada: <b style="color:var(--text-primary)">${precision}%</b></span>
+    </div>
+    <div class="form-label" style="margin-bottom:8px">Receita (para ${totalMl}ml)</div>`;
+  best.combo.forEach(c=>{
+    const ml = (totalMl*c.pct/100);
+    const gotas = Math.round(ml*gotasMl);
+    html += `<div class="cl-recipe-item"><div class="l"><div class="dot" style="background:${c.paint.hex}"></div>${c.paint.marca} ${c.paint.nome} (${c.paint.codigo})</div><div>${c.pct}% · ${ml.toFixed(2)}ml · ${gotas} gotas</div></div>`;
+  });
+  html += `<button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px" onclick="clUsarReceitaEncontrada()">🎨 Usar esta receita na Mistura Manual</button>`;
+  document.getElementById('cl-encontrar-resultado').innerHTML = html;
+  clLastEncontrada = {combo:best.combo, de:best.de, targetHex, mixHex:mixResult.hex};
+  clAddHistorico({tipo:'encontrar', hex:mixResult.hex, alvoHex:targetHex, deltaE:best.de, receita:best.combo.map(c=>({paintId:c.paint.id,pct:c.pct}))});
+}
+function clUsarReceitaEncontrada(){
+  if(!clLastEncontrada) return;
+  clMisturaSlots = clLastEncontrada.combo.slice(0,5).map(c=>({slotId:clNextSlotId++, paintId:c.paint.id, pct:c.pct}));
+  clSwitchTab('manual');
+  clRenderSlots(); clComputeMix();
+  showToast('🎨 Receita carregada na Mistura Manual!');
+}
+
+// --- Receitas Oficiais ---
+function clRenderReceitas(filtro){
+  filtro = filtro || clReceitaFiltro || 'todas';
+  clReceitaFiltro = filtro;
+  const categorias = ['todas', ...new Set(CL_RECEITAS.map(r=>r.categoria))];
+  document.getElementById('cl-receitas-filtro').innerHTML = categorias.map(c=>
+    `<button type="button" class="cl-chip-btn ${filtro===c?'active':''}" onclick="clRenderReceitas('${c}')">${c==='todas'?'Todas':c}</button>`
+  ).join('');
+  const list = CL_RECEITAS.filter(r=>filtro==='todas'||r.categoria===filtro);
+  const gradFor = r=>`linear-gradient(135deg, ${r.itens.map(([id])=>clGetPaint(id)?.hex||'#333').join(',')})`;
+  document.getElementById('cl-receitas-grid').innerHTML = list.map(r=>
+    `<div class="cl-cat-card" onclick="clAbrirReceita(${r.id})">
+      <div class="cl-cat-img" style="background:${gradFor(r)}"></div>
+      <div class="cl-cat-body">
+        <div class="cl-cat-title">${r.titulo}</div>
+        <div class="cl-cat-tag">${r.categoria} · ${r.dificuldade}</div>
+      </div>
+    </div>`
+  ).join('');
+}
+let clReceitaFiltro = 'todas';
+function clAbrirReceita(id){
+  const r = CL_RECEITAS.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('cl-receita-titulo').textContent = '📚 '+r.titulo;
+  const itensHtml = r.itens.map(([pid,pct])=>{
+    const p = clGetPaint(pid);
+    if(!p) return '';
+    return `<div class="cl-recipe-item"><div class="l"><div class="dot" style="background:${p.hex}"></div>${p.marca} ${p.nome} (${p.codigo})</div><div>${pct}%</div></div>`;
+  }).join('');
+  document.getElementById('cl-receita-conteudo').innerHTML = `
+    <div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:12px">${r.obs}</div>
+    <div class="cl-metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
+      <div class="cl-metric"><div class="cl-metric-label">Dificuldade</div><div class="cl-metric-value">${r.dificuldade}</div></div>
+      <div class="cl-metric"><div class="cl-metric-label">Acabamento</div><div class="cl-metric-value">${r.acabamento}</div></div>
+      <div class="cl-metric"><div class="cl-metric-label">Verniz</div><div class="cl-metric-value" style="font-size:11px">${r.verniz}</div></div>
+    </div>
+    <div class="form-label" style="margin-bottom:8px">Tintas utilizadas</div>
+    ${itensHtml}`;
+  document.getElementById('cl-receita-usar-btn').onclick = function(){ clUsarReceita(id); };
+  openModal('modal-cl-receita');
+}
+function clUsarReceita(id){
+  const r = CL_RECEITAS.find(x=>x.id===id);
+  if(!r) return;
+  clMisturaSlots = r.itens.slice(0,5).map(([pid,pct])=>({slotId:clNextSlotId++, paintId:pid, pct}));
+  closeModal('modal-cl-receita');
+  clSwitchTab('manual');
+  clRenderSlots(); clComputeMix();
+  showToast('🎨 Receita "'+r.titulo+'" carregada na Mistura Manual!');
+}
+
+// --- Favoritos ---
+function clRenderFavoritos(){
+  const el = document.getElementById('cl-favoritos-lista');
+  if(!el) return;
+  const busca = (document.getElementById('cl-fav-busca').value||'').toLowerCase();
+  const list = clFavoritos.filter(f=>!busca||f.nome.toLowerCase().includes(busca));
+  if(!list.length){ el.innerHTML = '<div class="cl-empty">Nenhum favorito ainda. Salve uma mistura na aba "Mistura Manual".</div>'; return; }
+  el.innerHTML = list.map(f=>{
+    const receitaTxt = f.receita.map(it=>{ const p=clGetPaint(it.paintId); return p?`${p.nome} ${it.pct}%`:''; }).filter(Boolean).join(' · ');
+    return `<div class="cl-fav-card">
+      <div class="cl-swatch" style="width:48px;height:48px;background:${f.hex}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px">${f.nome}</div>
+        <div style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${receitaTxt}</div>
+      </div>
+      <button class="btn btn-ghost" onclick="clUsarFavorito(${f.id})">🎨 Usar</button>
+      <button class="btn btn-ghost" onclick="clExcluirFavorito(${f.id})">🗑️</button>
+    </div>`;
+  }).join('');
+}
+function clUsarFavorito(id){
+  const f = clFavoritos.find(x=>x.id===id);
+  if(!f) return;
+  clMisturaSlots = f.receita.slice(0,5).map(it=>({slotId:clNextSlotId++, paintId:it.paintId, pct:it.pct}));
+  clSwitchTab('manual');
+  clRenderSlots(); clComputeMix();
+  showToast('🎨 Favorito carregado na Mistura Manual!');
+}
+function clExcluirFavorito(id){
+  if(!confirm('Excluir este favorito?')) return;
+  clFavoritos = clFavoritos.filter(x=>x.id!==id);
+  salvarDB(); clRenderFavoritos(); clRenderStats();
+}
+
+// --- Histórico ---
+function clAddHistorico(entry){
+  clHistorico.unshift({id:clNextHistId++, ts:Date.now(), ...entry});
+  if(clHistorico.length>300) clHistorico = clHistorico.slice(0,300);
+  salvarDB();
+  clRenderHistorico(); clRenderStats();
+}
+function clRenderHistorico(){
+  const el = document.getElementById('cl-historico-lista');
+  if(!el) return;
+  const busca = (document.getElementById('cl-hist-busca').value||'').toLowerCase();
+  const list = clHistorico.filter(h=>!busca || h.hex.toLowerCase().includes(busca) || (h.tipo||'').includes(busca));
+  if(!list.length){ el.innerHTML = '<div class="cl-empty">Nenhuma mistura registrada ainda.</div>'; return; }
+  el.innerHTML = list.slice(0,100).map(h=>{
+    const data = new Date(h.ts).toLocaleString('pt-BR');
+    const receitaTxt = (h.receita||[]).map(it=>{ const p=clGetPaint(it.paintId); return p?`${p.nome} ${it.pct}%`:''; }).filter(Boolean).join(' · ');
+    return `<div class="cl-fav-card">
+      <div class="cl-swatch" style="width:48px;height:48px;background:${h.hex}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px">${h.tipo==='encontrar'?'🎯 Encontrada':'🎨 Manual'} · ${h.hex.toUpperCase()}${h.deltaE!=null?' · ΔE '+h.deltaE.toFixed(2):''}</div>
+        <div style="font-size:10.5px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${data} — ${receitaTxt}</div>
+      </div>
+      <button class="btn btn-ghost" onclick="clExcluirHistorico(${h.id})">🗑️</button>
+    </div>`;
+  }).join('');
+}
+function clExcluirHistorico(id){
+  clHistorico = clHistorico.filter(x=>x.id!==id);
+  salvarDB(); clRenderHistorico(); clRenderStats();
+}
+function clExportarHistorico(){
+  const blob = new Blob([JSON.stringify(clHistorico,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `vertocolor-historico-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('⬇️ Histórico exportado!','💾');
+}
+
+// --- Comparador ---
+function clSyncCmpA(){ const hex=document.getElementById('cl-cmp-a-hex').value; if(/^#?[0-9a-fA-F]{6}$/.test(hex)) document.getElementById('cl-cmp-a').value = hex[0]==='#'?hex:'#'+hex; clComparar(); }
+function clSyncCmpB(){ const hex=document.getElementById('cl-cmp-b-hex').value; if(/^#?[0-9a-fA-F]{6}$/.test(hex)) document.getElementById('cl-cmp-b').value = hex[0]==='#'?hex:'#'+hex; clComparar(); }
+function clComparar(){
+  const hexA = document.getElementById('cl-cmp-a').value;
+  const hexB = document.getElementById('cl-cmp-b').value;
+  document.getElementById('cl-cmp-a-hex').value = hexA.toUpperCase();
+  document.getElementById('cl-cmp-b-hex').value = hexB.toUpperCase();
+  document.getElementById('cl-cmp-a-swatch').style.background = hexA;
+  document.getElementById('cl-cmp-b-swatch').style.background = hexB;
+  const rgbA = clHexToRgb(hexA), rgbB = clHexToRgb(hexB);
+  const labA = clRgbToLab(rgbA.r,rgbA.g,rgbA.b), labB = clRgbToLab(rgbB.r,rgbB.g,rgbB.b);
+  const de = clDeltaE2000(labA,labB);
+  const qualidade = clDeltaEQuality(de);
+  const textos = {excelente:'Diferença imperceptível a olho nu — ótima reprodução.',boa:'Diferença perceptível apenas em comparação direta e de perto.',aceitavel:'Diferença perceptível, mas aceitável para a maioria dos usos.',fraca:'Diferença bem visível — considere ajustar a mistura.'};
+  document.getElementById('cl-cmp-resultado').innerHTML = `
+    <div style="font-size:34px;font-family:'JetBrains Mono',monospace;font-weight:700;margin-bottom:6px">ΔE ${de.toFixed(2)}</div>
+    <span class="cl-deltae ${qualidade}" style="margin-bottom:10px">${qualidade.toUpperCase()}</span>
+    <div style="font-size:12.5px;color:var(--text-muted);margin-top:10px">${textos[qualidade]}</div>`;
+}
+
+// --- Correção Inteligente ---
+function clFindPaintByKeyword(keyword){
+  if(!keyword) return null;
+  const all = clGetAllPaints();
+  return all.find(p=>p.nome.toLowerCase().includes(keyword)||p.categoria.toLowerCase().includes(keyword));
+}
+function clAnalisarCorrecao(){
+  const texto = (document.getElementById('cl-correcao-texto').value||'').toLowerCase();
+  if(!clMisturaSlots.length){ showToast('Gere uma mistura na aba "Mistura Manual" primeiro.','⚠️'); return; }
+  if(!texto.trim()){ showToast('Descreva o problema com a cor atual.','⚠️'); return; }
+  const suggestions = [];
+  if(/escur/.test(texto)) suggestions.push({titulo:'Aumentar luminosidade',texto:'A mistura está com L* baixo na escala CIELAB (pouca luz). Adicione branco em incrementos de 5–10% — eleva o L* sem alterar muito o matiz.',kw:'branco'});
+  if(/clar|p[aá]lid|desbotad/.test(texto)) suggestions.push({titulo:'Reduzir luminosidade',texto:'Adicione preto aos poucos (2–5% por vez) — tem alto poder de tingimento e escurece rapidamente.',kw:'preto'});
+  if(/vermelh/.test(texto)) suggestions.push({titulo:'Neutralizar vermelho em excesso',texto:'O eixo a* está deslocado para o vermelho. Adicione um pouco de verde para reequilibrar.',kw:'verde'});
+  if(/verde|esverdead/.test(texto)) suggestions.push({titulo:'Neutralizar verde em excesso',texto:'Adicione um pouco de vermelho ou magenta para reequilibrar o eixo a* (verde–vermelho).',kw:'vermelho'});
+  if(/azul/.test(texto)) suggestions.push({titulo:'Neutralizar azul em excesso',texto:'O eixo b* está deslocado para o azul. Adicione um pouco de laranja para reequilibrar.',kw:'laranja'});
+  if(/amarel/.test(texto)) suggestions.push({titulo:'Neutralizar amarelo em excesso',texto:'Adicione um pouco de violeta — é a cor complementar do amarelo e reduz o excesso no eixo b*.',kw:'violeta'});
+  if(/satura|sem vida|opac|apagad|sem brilho/.test(texto)) suggestions.push({titulo:'Aumentar saturação',texto:'Misturas perdem croma quando têm muito branco/preto. Reduza os neutros e reforce a tinta pura de maior cor na receita.',kw:null});
+  if(!suggestions.length) suggestions.push({titulo:'Não identifiquei um padrão específico',texto:'Tente termos como "escuro", "claro", "vermelho", "azul", "amarelado" ou "sem saturação".',kw:null});
+  document.getElementById('cl-correcao-resultado').innerHTML = suggestions.map(s=>{
+    const paint = clFindPaintByKeyword(s.kw);
+    const btn = paint ? `<button class="btn btn-ghost" style="margin-top:8px" onclick="clAplicarSugestao('${paint.id}')">➕ Adicionar ${paint.nome} (8%)</button>` : '';
+    return `<div class="cl-suggestion"><b>${s.titulo}</b><br>${s.texto}${btn}</div>`;
+  }).join('');
+}
+function clAplicarSugestao(paintId){
+  clAddPaintToSlot(paintId, 8);
+  clSwitchTab('manual');
+  showToast('✅ Sugestão adicionada à Mistura Manual!');
+}
+
+// --- Configurações / tintas personalizadas ---
+function clAddCustomPaint(){
+  const marca = document.getElementById('cl-cp-marca').value.trim();
+  const nome = document.getElementById('cl-cp-nome').value.trim();
+  const codigo = document.getElementById('cl-cp-codigo').value.trim() || 'CUSTOM';
+  const categoria = document.getElementById('cl-cp-categoria').value.trim() || 'Personalizada';
+  const hex = document.getElementById('cl-cp-hex').value;
+  const acabamento = document.getElementById('cl-cp-acabamento').value;
+  if(!marca || !nome){ showToast('Informe ao menos marca e nome da tinta.','⚠️'); return; }
+  clCustomPaints.push({id:'custom-'+(clNextCustomId++), marca, nome, codigo, categoria, hex, acabamento, linha:'Personalizada'});
+  salvarDB();
+  document.getElementById('cl-cp-marca').value=''; document.getElementById('cl-cp-nome').value='';
+  document.getElementById('cl-cp-codigo').value=''; document.getElementById('cl-cp-categoria').value='';
+  clRenderCustomPaintsList(); clRenderStats();
+  showToast('➕ Tinta personalizada cadastrada!');
+}
+function clRenderCustomPaintsList(){
+  const el = document.getElementById('cl-custom-lista');
+  if(!el) return;
+  if(!clCustomPaints.length){ el.innerHTML=''; return; }
+  el.innerHTML = '<div class="form-label" style="margin-bottom:8px">Tintas personalizadas cadastradas</div>' + clCustomPaints.map(p=>
+    `<div class="cl-recipe-item"><div class="l"><div class="dot" style="background:${p.hex}"></div>${p.marca} · ${p.nome}</div><button class="btn btn-ghost" style="padding:3px 8px" onclick="clDeleteCustomPaint('${p.id}')">🗑️</button></div>`
+  ).join('');
+}
+function clDeleteCustomPaint(id){
+  if(!confirm('Remover esta tinta personalizada?')) return;
+  clCustomPaints = clCustomPaints.filter(p=>p.id!==id);
+  salvarDB(); clRenderCustomPaintsList(); clRenderStats();
+}
+function clRenderStats(){
+  const all = clGetAllPaints();
+  document.getElementById('cl-stat-tintas').textContent = all.length;
+  document.getElementById('cl-stat-marcas').textContent = new Set(all.map(p=>p.marca)).size;
+  document.getElementById('cl-stat-favoritos').textContent = clFavoritos.length;
+  document.getElementById('cl-stat-historico').textContent = clHistorico.length;
+}
+
+// --- Navegação interna (abas) ---
+function clSwitchTab(tab){
+  document.querySelectorAll('#cl-tabs .cl-tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+  document.querySelectorAll('#page-colorlab .cl-panel').forEach(p=>p.classList.remove('active'));
+  const panel = document.getElementById('cl-panel-'+tab);
+  if(panel) panel.classList.add('active');
+}
+function clInit(){
+  clRenderSlots();
+  clComputeMix();
+  clRenderReceitas();
+  clRenderFavoritos();
+  clRenderHistorico();
+  clRenderCustomPaintsList();
+  clRenderStats();
+  if(!clInitialized){
+    clComparar();
+    clInitialized = true;
   }
 }
 
