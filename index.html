@@ -1963,10 +1963,7 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
           </div>
           <div class="card-body">
             <div id="cl-slots-container"></div>
-            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px">
-              <div class="form-group"><label class="form-label">Volume Total (ml)</label><input type="number" class="form-input" id="cl-total-ml" value="10" min="0.5" step="0.5" oninput="clRenderSlots();clComputeMix();"></div>
-              <div class="form-group"><label class="form-label">Gotas por ml</label><input type="number" class="form-input" id="cl-gotas-ml" value="20" min="1" step="1" oninput="clRenderSlots();clComputeMix();"></div>
-            </div>
+            <div class="form-group"><label class="form-label">Total de Gotas da Mistura</label><input type="number" class="form-input" id="cl-total-gotas" value="20" min="1" step="1" oninput="clRenderSlots();clComputeMix();"></div>
           </div>
         </div>
         <div>
@@ -2101,7 +2098,7 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
               <div class="cl-metric"><div class="cl-metric-label">Favoritos</div><div class="cl-metric-value" id="cl-stat-favoritos">-</div></div>
               <div class="cl-metric"><div class="cl-metric-label">Histórico</div><div class="cl-metric-value" id="cl-stat-historico">-</div></div>
             </div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:14px;line-height:1.6">O VertoColor Lab hoje suporta a linha <b>Acrilex</b> (Fosca, Brilhante, Metálica e Fluorescente). Novas marcas — Corfix, Vallejo, Citadel, AK Interactive, Army Painter, True Colors, Tamiya — podem ser adicionadas manualmente ou por importação abaixo, sem alterar o motor de cores.</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:14px;line-height:1.6">O VertoColor Lab hoje suporta a linha <b>Acrilex</b> (Fosca, Metálica e Fluorescente com cores extraídas de cartelas oficiais; Brilhante ainda é um conjunto curado). Novas marcas — Corfix, Vallejo, Citadel, AK Interactive, Army Painter, True Colors, Tamiya — podem ser adicionadas manualmente ou por importação abaixo, sem alterar o motor de cores.</div>
           </div>
         </div>
         <div class="card">
@@ -5128,68 +5125,201 @@ function detectarPromptInstalacao(){
 
 // --- Banco de tintas (Acrilex) ---
 const CL_ACRILEX_FOSCA = [
-  ['501','Azul Turquesa','#00a99d','Azul'],['502','Azul Cobalto','#1c39bb','Azul'],
-  ['503','Azul Celeste','#4a9fe0','Azul'],['504','Amarelo Limão','#e8e828','Amarelo'],
-  ['505','Amarelo Ouro','#f2b705','Amarelo'],['506','Cerâmica','#b5651d','Marrom'],
-  ['507','Vermelho Fogo','#e0301e','Vermelho'],['508','Vermelho Escarlate','#ff2400','Vermelho'],
-  ['509','Vermelho Carmim','#960018','Vermelho'],['510','Verde Folha','#4c9a2a','Verde'],
-  ['511','Verde Bandeira','#009739','Verde'],['512','Verde Veronese','#6b9362','Verde'],
-  ['513','Verde Musgo','#6b8e23','Verde'],['514','Terra Queimada','#7b3f00','Marrom'],
-  ['516','Violeta','#6a3fa0','Violeta'],['517','Laranja','#ff7f00','Laranja'],
-  ['518','Salmão','#fa8072','Pele'],['519','Branco','#ffffff','Neutro'],
-  ['520','Preto','#141414','Neutro'],['525','Camurça','#c19a6b','Pele'],
-  ['527','Pink','#ff69b4','Rosa'],['528','Lilás','#c8a2c8','Violeta'],
-  ['529','Marfim','#f2ead3','Neutro'],['531','Marrom','#6b3410','Marrom'],
-  ['535','Azul Mar','#1a6b96','Azul'],['536','Amarelo Cádmio','#ffde00','Amarelo'],
-  ['537','Rosa','#f4a6bb','Rosa'],['538','Amarelo Pele','#f0c090','Pele'],
-  ['539','Siena Natural','#b06a2c','Marrom'],['540','Violeta Cobalto','#5b3a8e','Violeta'],
-  ['541','Vermelho Vivo','#e0102b','Vermelho'],['542','Rosa Escuro','#d1477a','Rosa'],
-  ['543','Azul Ultramar','#1b1f8a','Azul'],['544','Azul Marinho','#0a1a4a','Azul'],
-  ['545','Verde Oliva','#6f7222','Verde'],['546','Verde Pinheiro','#1c3b2e','Verde'],
-  ['549','Magenta','#d6006e','Rosa'],['550','Púrpura','#7d1a5b','Violeta'],
-  ['551','Sépia','#5b3a29','Marrom'],['552','Verde Glacial','#a8d8c9','Verde'],
-  ['560','Azul Caribe','#1fb6c9','Azul'],['565','Vinho','#5e1224','Vermelho'],
-  ['566','Pêssego','#f6b895','Pele'],['567','Rosa Chá','#e8a9b8','Rosa'],
+  ['519','Branco','#ebebea','Neutro'],
+  ['893','Mineral','#f1f5d8','Neutro'],
+  ['903','Creme','#fcf9e7','Neutro'],
+  ['835','Saara','#f0e9d4','Amarelo'],
+  ['892','Pérola','#fff9db','Neutro'],
+  ['817','Areia','#f4ddcb','Laranja'],
+  ['808','Amarelo Bebê','#f9f7b8','Amarelo'],
+  ['504','Amarelo Limão','#f5ee48','Amarelo'],
+  ['895','Melão','#fbb146','Laranja'],
+  ['505','Amarelo Ouro','#fdba12','Amarelo'],
+  ['536','Amarelo Cádmio','#f89b38','Laranja'],
+  ['564','Amarelo Ocre','#df9248','Laranja'],
+  ['831','Amêndoa','#dc6b40','Laranja'],
+  ['538','Amarelo Pêssego','#fae1d0','Laranja'],
+  ['812','Salmão Bebê','#fce3da','Neutro'],
+  ['929','Areia Rosada','#f2b39c','Laranja'],
+  ['518','Salmão','#f69c82','Vermelho'],
+  ['801','Tangerina','#f37740','Laranja'],
+  ['576','Cenoura','#f05a2a','Vermelho'],
+  ['517','Laranja','#ee3b23','Vermelho'],
+  ['541','Vermelho Vivo','#e6332c','Vermelho'],
+  ['813','Rosa Bebê','#fce7e6','Neutro'],
+  ['894','Rosa Cotton','#f9c5c3','Vermelho'],
+  ['910','Rosa Primavera','#f7d9e3','Neutro'],
+  ['537','Rosa','#f8bfc7','Vermelho'],
+  ['909','Tutti-Frutti','#f6b3d1','Rosa'],
+  ['542','Rosa Escuro','#ed9bb4','Rosa'],
+  ['527','Pink','#f2809a','Vermelho'],
+  ['828','Rosa Antigo','#f07682','Vermelho'],
+  ['586','Coral','#ec5d56','Vermelho'],
+  ['804','Fuchsia','#cd2c70','Rosa'],
+  ['805','Goiaba Queimada','#cd4e57','Vermelho'],
+  ['827','Romã','#d52e3b','Vermelho'],
+  ['507','Vermelho Fogo','#e54a34','Vermelho'],
+  ['555','Vermelho','#d52a2b','Vermelho'],
+  ['508','Vermelho Escarlate','#ac2f33','Vermelho'],
+  ['550','Púrpura','#9b3e40','Vermelho'],
+  ['514','Terra Queimada','#9c4a4f','Vermelho'],
+  ['826','Cereja','#9a373d','Vermelho'],
+  ['914','Arândano','#93404a','Vermelho'],
+  ['565','Vinho','#673448','Rosa'],
+  ['528','Lilás','#e6d0df','Rosa'],
+  ['915','Orquídea','#d7b1cc','Rosa'],
+  ['581','Rosa Ciclame','#bf6e80','Vermelho'],
+  ['913','Ameixa','#874961','Rosa'],
+  ['549','Magenta','#c24882','Rosa'],
+  ['809','Lilás Bebê','#e9e5f0','Neutro'],
+  ['587','Lavanda','#becce8','Azul'],
+  ['916','Violeta Gris','#998eab','Neutro'],
+  ['516','Violeta','#9a77b4','Neutro'],
+  ['918','Roxo','#7468a7','Azul'],
+  ['917','Violeta Escuro','#69306d','Rosa'],
+  ['540','Violeta Cobalto','#3e2f69','Violeta'],
+  ['919','Azul Água','#def2fd','Neutro'],
+  ['579','Azul Hortência','#b1dbe8','Azul'],
+  ['503','Azul Celeste','#43b7e2','Azul'],
+  ['921','Azul Bali','#80a7d2','Azul'],
+  ['825','Azul Country','#8da2c9','Azul'],
+  ['559','Azul','#2c76b7','Azul'],
+  ['578','Azul Intenso','#384898','Azul'],
+  ['501','Azul Turquesa','#3d5383','Azul'],
+  ['824','Azul Seco','#546078','Azul'],
+  ['544','Azul Marinho','#364570','Azul'],
+  ['897','Verde Soft','#f6f8d8','Neutro'],
+  ['820','Verde Primavera','#e2eec5','Verde'],
+  ['898','Verde Alecrim','#d6e37e','Verde'],
+  ['802','Verde Maçã','#a5bf39','Verde'],
+  ['570','Verde Pistache','#9da547','Verde'],
+  ['510','Verde Folha','#51b94d','Verde'],
+  ['582','Verde Grama','#2a7042','Verde'],
+  ['545','Verde Oliva','#6d7047','Amarelo'],
+  ['513','Verde Musgo','#4a6836','Verde'],
+  ['571','Verde Esmeralda','#004433','Neutro'],
+  ['821','Verde Água','#b8e0d6','Verde'],
+  ['577','Turquesa','#54c3be','Azul'],
+  ['822','Verde Country','#0da18b','Azul'],
+  ['803','Acqua Marina','#85c9d1','Azul'],
+  ['823','Azul Piscina','#1d97ad','Azul'],
+  ['904','Ocre','#e3cd9d','Amarelo'],
+  ['525','Camurça','#fdcf83','Laranja'],
+  ['818','Camurça Queimado','#deb290','Laranja'],
+  ['569','Caramelo','#b68031','Laranja'],
+  ['539','Siena Natural','#b5653c','Laranja'],
+  ['932','Telha','#c04037','Vermelho'],
+  ['506','Cerâmica','#a74e42','Vermelho'],
+  ['585','Capuccino','#af8f76','Neutro'],
+  ['531','Marrom','#af6851','Vermelho'],
+  ['526','Marrom Escuro','#825649','Vermelho'],
+  ['896','Rústico','#47321b','Laranja'],
+  ['879','Areia Lunar','#b6beaf','Neutro'],
+  ['819','Concreto','#a99a83','Neutro'],
+  ['551','Sépia','#52483c','Marrom'],
+  ['933','Cinza','#d2dadc','Neutro'],
+  ['530','Grafite','#595a59','Verde'],
+  ['520','Preto','#1e1c19','Neutro'],
 ].map(([codigo,nome,hex,categoria])=>({id:'ax-f-'+codigo,marca:'Acrilex',linha:'Fosca',nome,codigo,categoria,hex,acabamento:'Fosco'}));
 
 const CL_ACRILEX_BRILHANTE = [
-  ['BR-01','Branco','#ffffff','Neutro'],['BR-02','Preto','#141414','Neutro'],
-  ['BR-03','Amarelo','#ffde00','Amarelo'],['BR-04','Vermelho','#e0301e','Vermelho'],
-  ['BR-05','Azul','#1c39bb','Azul'],['BR-06','Verde','#4c9a2a','Verde'],
-  ['BR-07','Laranja','#ff7f00','Laranja'],['BR-08','Roxo','#6a3fa0','Violeta'],
-  ['BR-09','Rosa','#f4a6bb','Rosa'],['BR-10','Marrom','#6b3410','Marrom'],
+  ['519','Branco','#f5f3ef','Neutro'],
+  ['538','Amarelo Pele','#f1c277','Laranja'],
+  ['504','Amarelo Limão','#f0e53b','Amarelo'],
+  ['505','Amarelo Ouro','#fad230','Amarelo'],
+  ['517','Laranja','#ec6125','Laranja'],
+  ['507','Vermelho Fogo','#e52224','Vermelho'],
+  ['508','Vermelho Escarlate','#d12327','Vermelho'],
+  ['565','Vinho','#650a22','Rosa'],
+  ['537','Rosa','#eea1b2','Vermelho'],
+  ['542','Rosa Escuro','#e11d48','Vermelho'],
+  ['528','Lilás','#aa99ca','Violeta'],
+  ['516','Violeta','#44266d','Violeta'],
+  ['503','Azul Celeste','#3b77bc','Azul'],
+  ['501','Azul Turquesa','#1f4498','Azul'],
+  ['510','Verde Folha','#6b9d40','Verde'],
+  ['513','Verde Musgo','#3e7839','Verde'],
+  ['545','Verde Oliva','#2f3417','Neutro'],
+  ['506','Cerâmica','#6d2312','Vermelho'],
+  ['531','Marrom','#4f2012','Vermelho'],
+  ['520','Preto','#050508','Neutro'],
 ].map(([codigo,nome,hex,categoria])=>({id:'ax-b-'+codigo,marca:'Acrilex',linha:'Brilhante',nome,codigo,categoria,hex,acabamento:'Brilhante'}));
 
+const CL_ACRILEX_VITRAL = [
+  ['500','Incolor','#d0d0cf','Neutro'],
+  ['505','Amarelo Ouro','#eecb3f','Amarelo'],
+  ['536','Amarelo Cádmio','#f5cc60','Amarelo'],
+  ['547','Pele','#e69d8d','Vermelho'],
+  ['517','Laranja','#e55c34','Vermelho'],
+  ['586','Coral','#e23c34','Vermelho'],
+  ['507','Vermelho Fogo','#a11f22','Vermelho'],
+  ['509','Vermelho Carmim','#dd1d71','Rosa'],
+  ['550','Púrpura','#dd408d','Rosa'],
+  ['537','Rosa','#d41d75','Rosa'],
+  ['540','Violeta Cobalto','#972582','Rosa'],
+  ['516','Violeta','#383185','Azul'],
+  ['501','Azul Turquesa','#2a96c8','Azul'],
+  ['597','Azul Vivo','#4e89c2','Azul'],
+  ['502','Azul Cobalto','#2d428b','Azul'],
+  ['580','Azul da Prússia','#4385ae','Azul'],
+  ['510','Verde Folha','#9dba40','Verde'],
+  ['512','Verde Veronese','#519978','Verde'],
+  ['545','Verde Oliva','#74814a','Verde'],
+  ['546','Verde Pinheiro','#237237','Verde'],
+  ['539','Siena Natural/Fumê','#945e25','Laranja'],
+  ['531','Marrom','#883a23','Vermelho'],
+  ['574','Cinza Lunar','#314a61','Azul'],
+  ['520','Preto','#101a27','Neutro'],
+  ['592','Base Madrepérola','#d1ced3','Neutro'],
+].map(([codigo,nome,hex,categoria])=>({id:'ax-vv-'+codigo,marca:'Acrilex',linha:'Verniz Vitral',nome,codigo,categoria,hex,acabamento:'Vitral (transparente)'}));
+
 const CL_ACRILEX_METALICA = [
-  ['MT-01','Dourado','#d4af37','Metálico'],['MT-02','Prata','#c0c0c0','Metálico'],
-  ['MT-03','Cobre','#b87333','Metálico'],['MT-04','Bronze','#8c7853','Metálico'],
-  ['MT-05','Pérola','#e8e4d8','Metálico'],['MT-06','Grafite','#4a4a4a','Metálico'],
+  ['520','Preto','#0b2625','Metálico'],
+  ['555','Vermelho','#fe414c','Metálico'],
+  ['535','Azul Mar','#03648e','Metálico'],
+  ['513','Verde Musgo','#28843b','Metálico'],
+  ['545','Verde Oliva','#416c36','Metálico'],
+  ['528','Lilás','#bfa5c9','Metálico'],
+  ['549','Magenta','#a2669b','Metálico'],
+  ['537','Rosa','#fb8ca3','Metálico'],
+  ['499','Rose Gold','#fcb6a3','Metálico'],
+  ['534','Cobre','#a93d18','Metálico'],
+  ['562','Branco Metálico','#e6e1d3','Metálico'],
+  ['533','Prata','#b7bab3','Metálico'],
+  ['599','Alumínio','#93a6b5','Metálico'],
+  ['556','Bronze','#755d1c','Metálico'],
+  ['598','Dourado Solar','#b5711f','Metálico'],
+  ['532','Ouro','#d19f52','Metálico'],
+  ['548','Ouro Velho','#b1611e','Metálico'],
 ].map(([codigo,nome,hex,categoria])=>({id:'ax-m-'+codigo,marca:'Acrilex',linha:'Metálica',nome,codigo,categoria,hex,acabamento:'Metálico'}));
 
 const CL_ACRILEX_FLUOR = [
-  ['FL-01','Amarelo Fluor','#ccff00','Amarelo'],['FL-02','Verde Fluor','#39ff14','Verde'],
-  ['FL-03','Rosa Fluor','#ff10f0','Rosa'],['FL-04','Laranja Fluor','#ff5f1f','Laranja'],
-  ['FL-05','Azul Fluor','#1f51ff','Azul'],['FL-06','Vermelho Fluor','#ff073a','Vermelho'],
+  ['102','Amarelo Limão','#f9e900','Amarelo'],
+  ['105','Laranja','#ff9600','Laranja'],
+  ['107','Maravilha','#ff3c93','Rosa'],
+  ['103','Vermelho','#ff2841','Vermelho'],
+  ['101','Verde','#4bb900','Verde'],
+  ['109','Azul','#0060ae','Azul'],
 ].map(([codigo,nome,hex,categoria])=>({id:'ax-fl-'+codigo,marca:'Acrilex',linha:'Fluorescente',nome,codigo,categoria,hex,acabamento:'Fluorescente'}));
 
-const CL_ACRILEX_PAINTS = [...CL_ACRILEX_FOSCA, ...CL_ACRILEX_BRILHANTE, ...CL_ACRILEX_METALICA, ...CL_ACRILEX_FLUOR];
+const CL_ACRILEX_PAINTS = [...CL_ACRILEX_FOSCA, ...CL_ACRILEX_BRILHANTE, ...CL_ACRILEX_VITRAL, ...CL_ACRILEX_METALICA, ...CL_ACRILEX_FLUOR];
 
 // --- Receitas oficiais (biblioteca inicial) ---
 const CL_RECEITAS = [
   {id:1,titulo:'Madeira Envelhecida',categoria:'Madeira',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Verniz fosco',obs:'Aplique em camadas finas e faça dry brush com Siena Natural por cima.',itens:[['ax-f-551',45],['ax-f-514',35],['ax-f-519',20]]},
   {id:2,titulo:'Madeira Clara de Pinho',categoria:'Madeira',dificuldade:'Fácil',acabamento:'Acetinado',verniz:'Verniz acetinado',obs:'Boa base para dry brush com Amarelo Pele.',itens:[['ax-f-539',50],['ax-f-538',30],['ax-f-519',20]]},
-  {id:3,titulo:'Metal Dourado Envelhecido',categoria:'Metais',dificuldade:'Médio',acabamento:'Metálico',verniz:'Verniz fosco (após lavagem de sépia)',obs:'Finalize com um wash de Sépia diluída para realçar os baixos-relevos.',itens:[['ax-m-MT-01',70],['ax-m-MT-03',20],['ax-f-520',10]]},
-  {id:4,titulo:'Prata Envelhecida (Aço)',categoria:'Metais',dificuldade:'Médio',acabamento:'Metálico',verniz:'Verniz fosco',obs:'Ideal para armas e armaduras de miniaturas.',itens:[['ax-m-MT-02',75],['ax-m-MT-06',20],['ax-f-520',5]]},
+  {id:3,titulo:'Metal Dourado Envelhecido',categoria:'Metais',dificuldade:'Médio',acabamento:'Metálico',verniz:'Verniz fosco (após lavagem de sépia)',obs:'Finalize com um wash de Sépia diluída para realçar os baixos-relevos.',itens:[['ax-m-532',70],['ax-m-534',20],['ax-f-520',10]]},
+  {id:4,titulo:'Prata Envelhecida (Aço)',categoria:'Metais',dificuldade:'Médio',acabamento:'Metálico',verniz:'Verniz fosco',obs:'Ideal para armas e armaduras de miniaturas.',itens:[['ax-m-533',75],['ax-m-533',20],['ax-f-520',5]]},
   {id:5,titulo:'Ferrugem Clássica',categoria:'Ferrugem',dificuldade:'Médio',acabamento:'Fosco',verniz:'Fosco',obs:'Aplique com esponja natural sobre metal para textura irregular.',itens:[['ax-f-506',40],['ax-f-539',30],['ax-f-507',20],['ax-f-520',10]]},
-  {id:6,titulo:'Concreto Cinza',categoria:'Concreto',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Fosco',obs:'Adicione textura com areia fina antes de pintar para mais realismo.',itens:[['ax-m-MT-06',35],['ax-f-519',45],['ax-f-520',20]]},
-  {id:7,titulo:'Pedra Rochosa',categoria:'Pedras',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Fosco',obs:'Faça dry brush com camadas cada vez mais claras.',itens:[['ax-f-551',30],['ax-m-MT-06',30],['ax-f-519',40]]},
+  {id:6,titulo:'Concreto Cinza',categoria:'Concreto',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Fosco',obs:'Adicione textura com areia fina antes de pintar para mais realismo.',itens:[['ax-m-533',35],['ax-f-519',45],['ax-f-520',20]]},
+  {id:7,titulo:'Pedra Rochosa',categoria:'Pedras',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Fosco',obs:'Faça dry brush com camadas cada vez mais claras.',itens:[['ax-f-551',30],['ax-m-533',30],['ax-f-519',40]]},
   {id:8,titulo:'Couro Marrom',categoria:'Couro',dificuldade:'Fácil',acabamento:'Acetinado',verniz:'Acetinado',obs:'Finalize com brilho leve nas dobras para simular desgaste.',itens:[['ax-f-531',55],['ax-f-514',25],['ax-f-538',20]]},
   {id:9,titulo:'Pele Clara',categoria:'Pele',dificuldade:'Médio',acabamento:'Fosco',verniz:'Fosco',obs:'Use sombras com Siena Natural e luzes com Marfim.',itens:[['ax-f-538',60],['ax-f-518',25],['ax-f-519',15]]},
-  {id:10,titulo:'Pele Escura',categoria:'Pele',dificuldade:'Médio',acabamento:'Fosco',verniz:'Fosco',obs:'Adicione toques de Vermelho Carmim nas áreas de sombra para naturalidade.',itens:[['ax-f-551',45],['ax-f-514',35],['ax-f-509',20]]},
+  {id:10,titulo:'Pele Escura',categoria:'Pele',dificuldade:'Médio',acabamento:'Fosco',verniz:'Fosco',obs:'Adicione toques de Romã nas áreas de sombra para naturalidade.',itens:[['ax-f-551',45],['ax-f-514',35],['ax-f-827',20]]},
   {id:11,titulo:'Grama e Vegetação',categoria:'Natureza',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Fosco',obs:'Varie a proporção entre bases para criar manchas naturais na cena.',itens:[['ax-f-510',50],['ax-f-545',30],['ax-f-536',20]]},
-  {id:12,titulo:'Poção Mágica (Fantasia)',categoria:'Fantasia',dificuldade:'Fácil',acabamento:'Brilhante',verniz:'Brilhante / Gloss',obs:'Aplicar sobre resina transparente para efeito de líquido.',itens:[['ax-b-BR-05',50],['ax-fl-FL-02',30],['ax-f-519',20]]},
-  {id:13,titulo:'Base para Miniaturas (Cascalho)',categoria:'Miniaturas',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Fosco',obs:'Pinte a base texturizada e faça dry brush claro por cima.',itens:[['ax-f-551',40],['ax-m-MT-06',35],['ax-f-519',25]]},
-  {id:14,titulo:'Bronze Antigo',categoria:'Metais',dificuldade:'Médio',acabamento:'Metálico',verniz:'Fosco (após lavagem)',obs:'Ótimo para estátuas e detalhes decorativos impressos em 3D.',itens:[['ax-m-MT-04',60],['ax-m-MT-03',25],['ax-f-520',15]]},
+  {id:12,titulo:'Poção Mágica (Fantasia)',categoria:'Fantasia',dificuldade:'Fácil',acabamento:'Brilhante',verniz:'Brilhante / Gloss',obs:'Aplicar sobre resina transparente para efeito de líquido.',itens:[['ax-b-503',50],['ax-fl-101',30],['ax-f-519',20]]},
+  {id:13,titulo:'Base para Miniaturas (Cascalho)',categoria:'Miniaturas',dificuldade:'Fácil',acabamento:'Fosco',verniz:'Fosco',obs:'Pinte a base texturizada e faça dry brush claro por cima.',itens:[['ax-f-551',40],['ax-m-533',35],['ax-f-519',25]]},
+  {id:14,titulo:'Bronze Antigo',categoria:'Metais',dificuldade:'Médio',acabamento:'Metálico',verniz:'Fosco (após lavagem)',obs:'Ótimo para estátuas e detalhes decorativos impressos em 3D.',itens:[['ax-m-556',60],['ax-m-534',25],['ax-f-520',15]]},
 ];
 
 let clFavoritos = [];
@@ -5321,8 +5451,7 @@ function clMixPaints(items){
 function clRenderSlots(){
   const cont = document.getElementById('cl-slots-container');
   if(!cont) return;
-  const totalMl = parseFloat(document.getElementById('cl-total-ml').value)||10;
-  const gotasMl = parseFloat(document.getElementById('cl-gotas-ml').value)||20;
+  const totalGotas = parseFloat(document.getElementById('cl-total-gotas').value)||20;
   if(!clMisturaSlots.length){
     cont.innerHTML = '<div class="cl-empty">Toque em "+ Adicionar Tinta" para começar (até 5 tintas por mistura).</div>';
     document.getElementById('cl-btn-add-slot').disabled=false;
@@ -5331,8 +5460,7 @@ function clRenderSlots(){
   cont.innerHTML = clMisturaSlots.map(slot=>{
     const paint = clGetPaint(slot.paintId);
     if(!paint) return '';
-    const ml = (totalMl*slot.pct/100);
-    const gotas = Math.round(ml*gotasMl);
+    const gotas = Math.round(totalGotas*slot.pct/100);
     return `<div class="cl-slot">
       <div class="cl-slot-head">
         <div class="cl-swatch" style="background:${paint.hex}"></div>
@@ -5343,10 +5471,9 @@ function clRenderSlots(){
         <button class="btn btn-ghost" style="padding:6px 9px" onclick="clRemoveSlot(${slot.slotId})">✕</button>
       </div>
       <input type="range" class="cl-slider" min="0" max="100" step="1" value="${slot.pct}" oninput="clSetSlotPct(${slot.slotId},this.value)">
-      <div class="cl-slot-fields">
+      <div class="cl-slot-fields" style="grid-template-columns:1fr 1fr">
         <div><label class="form-label">%</label><input type="number" class="form-input" value="${slot.pct}" min="0" max="100" onchange="clSetSlotPct(${slot.slotId},this.value)"></div>
-        <div><label class="form-label">ml</label><input type="number" class="form-input" value="${ml.toFixed(2)}" min="0" step="0.1" onchange="clSetSlotMl(${slot.slotId},this.value)"></div>
-        <div><label class="form-label">gotas</label><input type="number" class="form-input" value="${gotas}" min="0" step="1" onchange="clSetSlotGotas(${slot.slotId},this.value)"></div>
+        <div><label class="form-label">🩸 Gotas</label><input type="number" class="form-input" value="${gotas}" min="0" step="1" onchange="clSetSlotGotas(${slot.slotId},this.value)"></div>
       </div>
     </div>`;
   }).join('');
@@ -5357,15 +5484,10 @@ function clSetSlotPct(id,val){
   slot.pct = Math.max(0,Math.min(100,parseFloat(val)||0));
   clRenderSlots(); clComputeMix();
 }
-function clSetSlotMl(id,val){
-  const totalMl = parseFloat(document.getElementById('cl-total-ml').value)||10;
-  const ml = Math.max(0,parseFloat(val)||0);
-  clSetSlotPct(id, totalMl>0 ? (ml/totalMl*100) : 0);
-}
 function clSetSlotGotas(id,val){
-  const gotasMl = parseFloat(document.getElementById('cl-gotas-ml').value)||20;
-  const ml = Math.max(0,parseFloat(val)||0)/gotasMl;
-  clSetSlotMl(id, ml);
+  const totalGotas = parseFloat(document.getElementById('cl-total-gotas').value)||20;
+  const gotas = Math.max(0,parseFloat(val)||0);
+  clSetSlotPct(id, totalGotas>0 ? (gotas/totalGotas*100) : 0);
 }
 function clAddSlot(){ clOpenPaintPicker('slot'); }
 function clAddPaintToSlot(paintId, pctOverride){
@@ -5444,7 +5566,7 @@ function clOpenPaintPicker(context){
   openModal('modal-cl-paint-picker');
 }
 function clRenderPickerFilters(){
-  const linhas = ['todas','Fosca','Brilhante','Metálica','Fluorescente','Personalizada'];
+  const linhas = ['todas','Fosca','Brilhante','Verniz Vitral','Metálica','Fluorescente','Personalizada'];
   document.getElementById('cl-picker-filtro').innerHTML = linhas.map(l=>
     `<button type="button" class="cl-chip-btn ${clPickerBrandFilter===l?'active':''}" onclick="clSetPickerFilter('${l}')">${l==='todas'?'Todas':l}</button>`
   ).join('');
@@ -5563,8 +5685,7 @@ function clEncontrarMistura(){
   const targetLab = clRgbToLab(targetRgb.r,targetRgb.g,targetRgb.b);
   const best = clFindBestMix(targetLab);
   const mixResult = clMixPaints(best.combo.map(c=>({hex:c.paint.hex,pct:c.pct})));
-  const totalMl = parseFloat(document.getElementById('cl-total-ml').value)||10;
-  const gotasMl = parseFloat(document.getElementById('cl-gotas-ml').value)||20;
+  const totalGotas = parseFloat(document.getElementById('cl-total-gotas').value)||20;
   const precision = clPrecisionFromDeltaE(best.de);
   const qualidade = clDeltaEQuality(best.de);
   let html = `
@@ -5576,11 +5697,10 @@ function clEncontrarMistura(){
       <span class="cl-deltae ${qualidade}">ΔE ${best.de.toFixed(2)}</span>
       <span style="font-size:12px;color:var(--text-muted)">Precisão estimada: <b style="color:var(--text-primary)">${precision}%</b></span>
     </div>
-    <div class="form-label" style="margin-bottom:8px">Receita (para ${totalMl}ml)</div>`;
+    <div class="form-label" style="margin-bottom:8px">Receita (para ${totalGotas} gotas no total)</div>`;
   best.combo.forEach(c=>{
-    const ml = (totalMl*c.pct/100);
-    const gotas = Math.round(ml*gotasMl);
-    html += `<div class="cl-recipe-item"><div class="l"><div class="dot" style="background:${c.paint.hex}"></div>${c.paint.marca} ${c.paint.nome} (${c.paint.codigo})</div><div>${c.pct}% · ${ml.toFixed(2)}ml · ${gotas} gotas</div></div>`;
+    const gotas = Math.round(totalGotas*c.pct/100);
+    html += `<div class="cl-recipe-item"><div class="l"><div class="dot" style="background:${c.paint.hex}"></div>${c.paint.marca} ${c.paint.nome} (${c.paint.codigo})</div><div>${c.pct}% · 🩸 ${gotas} gotas</div></div>`;
   });
   html += `<button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px" onclick="clUsarReceitaEncontrada()">🎨 Usar esta receita na Mistura Manual</button>`;
   document.getElementById('cl-encontrar-resultado').innerHTML = html;
