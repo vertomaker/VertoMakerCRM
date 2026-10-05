@@ -464,6 +464,26 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
   .page{ padding:32px; }
   .stat-value{ font-size:40px; }
 }
+
+/* ===================== TAGS NFC ===================== */
+.nfc-wrap{max-width:560px;display:flex;flex-direction:column;gap:14px;}
+.nfc-status{display:flex;gap:14px;align-items:center;padding:18px;border-left:4px solid var(--text-muted);}
+.nfc-status[data-s=waiting]{border-left-color:var(--accent);}
+.nfc-status[data-s=working]{border-left-color:var(--warning);}
+.nfc-status[data-s=success]{border-left-color:var(--success);}
+.nfc-status[data-s=error]{border-left-color:var(--danger);}
+.nfc-icon{font-size:32px;width:42px;text-align:center;flex-shrink:0;}
+.nfc-status[data-s=waiting] .nfc-icon{animation:nfcPulse 1.2s ease-in-out infinite;}
+@keyframes nfcPulse{50%{transform:scale(1.18);opacity:.6;}}
+@media (prefers-reduced-motion:reduce){.nfc-status[data-s=waiting] .nfc-icon{animation:none;}}
+.nfc-title{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;}
+.nfc-msg{font-size:12.5px;color:var(--text-secondary);margin-top:2px;}
+.nfc-rec{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-top:8px;word-break:break-word;white-space:pre-wrap;font-size:13.5px;}
+.nfc-rec small{display:block;color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:10.5px;margin-bottom:3px;}
+.nfc-block{padding:18px;}
+.nfc-block .btn{width:100%;justify-content:center;margin-top:12px;min-height:48px;}
+.nfc-block textarea{min-height:92px;resize:vertical;width:100%;}
+.nfc-count{text-align:right;font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:4px;}
 </style>
 </head>
 <body>
@@ -1387,6 +1407,7 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
     <div class="nav-item" onclick="navigateTo('colorlab',this)"><div class="nav-icon">🧪</div>VertoColor Lab<span class="nav-badge new">NOVO</span></div>
     <div class="nav-item" onclick="navigateTo('prompts',this)"><div class="nav-icon">✨</div>Prompts Bonecos</div>
     <div class="nav-item" onclick="navigateTo('links',this)"><div class="nav-icon">🔗</div>Links Úteis</div>
+    <div class="nav-item" onclick="navigateTo('nfc',this)"><div class="nav-icon">📡</div>Tags NFC<span class="nav-badge new">NOVO</span></div>
   </div>
   <div class="sidebar-section">
     <div class="sidebar-section-label">Configurações</div>
@@ -2143,6 +2164,38 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
     <div id="links-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px"></div>
   </div>
 
+  <!-- TAGS NFC -->
+  <div class="page" id="page-nfc">
+    <div class="section-header">
+      <div><div class="section-title">📡 Tags NFC</div><div class="section-sub">LER, GRAVAR E REGRAVAR TAGS NDEF</div></div>
+    </div>
+    <div class="nfc-wrap">
+      <div class="card nfc-block" id="nfc-unsupported" style="display:none;border-left:4px solid var(--danger)">
+        <b>NFC indisponível neste navegador.</b>
+        <div class="nfc-msg" id="nfc-why"></div>
+      </div>
+      <div class="card nfc-status" id="nfc-status" data-s="idle" aria-live="polite">
+        <div class="nfc-icon" id="nfc-icon">📡</div>
+        <div><div class="nfc-title" id="nfc-title">Pronto</div><div class="nfc-msg" id="nfc-msg">Escolha ler ou gravar uma tag.</div></div>
+      </div>
+      <button class="btn btn-primary" id="nfc-btn-read" onclick="nfcRead()" style="min-height:48px;justify-content:center">📲 Ler tag NFC</button>
+      <div class="card nfc-block" id="nfc-result" style="display:none">
+        <div class="form-label">Conteúdo lido</div>
+        <div id="nfc-records"></div>
+        <button class="btn btn-ghost" onclick="nfcCopy()" id="nfc-btn-copy">Copiar texto</button>
+      </div>
+      <div class="card nfc-block">
+        <div class="form-group">
+          <label class="form-label" for="nfc-txt">Texto para gravar</label>
+          <textarea class="form-input" id="nfc-txt" placeholder="Ex.: https://vertomaker.com.br/pedido/123" oninput="nfcCount()"></textarea>
+          <div class="nfc-count"><span id="nfc-bytes">0</span> bytes</div>
+        </div>
+        <button class="btn btn-orange" id="nfc-btn-write" onclick="nfcWrite()">✍️ Gravar / regravar tag</button>
+      </div>
+      <button class="btn btn-ghost" id="nfc-btn-cancel" onclick="nfcCancel()" style="display:none;justify-content:center">Cancelar</button>
+    </div>
+  </div>
+
   <!-- TRILHAS -->
   <div class="page" id="page-trilhas">
     <div class="section-header"><div><div class="section-title">🎓 Trilhas de Aprendizado</div><div class="section-sub">DOMINE A IMPRESSÃO 3D PASSO A PASSO</div></div></div>
@@ -2497,6 +2550,7 @@ const pageTitles={
   'colorlab':['VertoColor Lab','Ferramentas / Laboratório de Tintas'],
   'prompts':['Prompts Bonecos','Ferramentas / Prompts'],
   'links':['Links Úteis','Ferramentas / Links'],
+  'nfc':['Tags NFC','Ferramentas / Leitura e Gravação NFC'],
   'configuracoes':['Configurações','Sistema / Configurações'],
   'atualizacoes':['Atualizações','Sistema / Atualizações'],
   'meu-plano':['Meu Plano','Conta / Assinatura'],
@@ -2504,6 +2558,7 @@ const pageTitles={
 };
 
 function navigateTo(pageId,el){
+  if(pageId!=='nfc' && window.nfcStop) nfcStop();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const page=document.getElementById('page-'+pageId);
@@ -5973,6 +6028,101 @@ populateFilamentoSelect();
 renderAparencia();
 atualizarSidebar();
 detectarPromptInstalacao();
+
+
+// ===================== TAGS NFC (Web NFC · Chrome Android) =====================
+(function(){
+  const $=id=>document.getElementById(id);
+  const ICONS={idle:'📡',waiting:'📲',working:'⏳',success:'✅',error:'⚠️'};
+  const OK='NDEFReader' in window;
+  let ctrl=null,lastText='';
+
+  function nfcSet(s,title,msg){
+    $('nfc-status').dataset.s=s; $('nfc-icon').textContent=ICONS[s];
+    $('nfc-title').textContent=title; $('nfc-msg').textContent=msg||'';
+    const busy=s==='waiting'||s==='working';
+    $('nfc-btn-read').disabled=$('nfc-btn-write').disabled=busy||!OK;
+    $('nfc-btn-cancel').style.display=busy?'flex':'none';
+  }
+  function explain(e){
+    switch(e.name){
+      case 'NotAllowedError':return 'Permissão negada. Ative o NFC no aparelho e permita o acesso quando o Chrome pedir.';
+      case 'NotSupportedError':return 'NFC não suportado ou desativado neste aparelho.';
+      case 'NotReadableError':return 'Não foi possível ler. Verifique se o NFC está ligado e reaproxime a tag.';
+      case 'NetworkError':return 'Falha na gravação. Mantenha a tag parada junto ao aparelho; ela pode ser protegida ou incompatível.';
+      case 'InvalidStateError':return 'Outra operação NFC está em andamento. Cancele e tente de novo.';
+      case 'SyntaxError':return 'Conteúdo inválido para gravar.';
+      default:return e.message||'Erro desconhecido.';
+    }
+  }
+  function decode(r){
+    const d=enc=>new TextDecoder(enc||'utf-8');
+    switch(r.recordType){
+      case 'text':return {t:'Texto'+(r.lang?' ('+r.lang+')':''),v:d(r.encoding).decode(r.data)};
+      case 'url':case 'absolute-url':return {t:'URL',v:d().decode(r.data)};
+      case 'mime':return {t:'MIME '+(r.mediaType||''),v:d().decode(r.data)};
+      case 'empty':return {t:'Vazio',v:'(registro vazio)'};
+      default:return {t:r.recordType,v:[...new Uint8Array(r.data.buffer)].map(b=>b.toString(16).padStart(2,'0')).join(' ')};
+    }
+  }
+  function show(msg,serial){
+    const box=$('nfc-records'); box.textContent=''; const texts=[];
+    const add=(t,v)=>{const el=document.createElement('div');el.className='nfc-rec';const s=document.createElement('small');s.textContent=t;el.append(s,v);box.append(el);};
+    if(!msg.records.length) add('Tag','Tag vazia.');
+    msg.records.forEach(r=>{const x=decode(r);texts.push(x.v);add(x.t,x.v);});
+    if(serial) add('Serial',serial);
+    lastText=texts.join('\n'); $('nfc-result').style.display='block';
+  }
+  function stop(){ if(ctrl){ctrl.abort();ctrl=null;} }
+
+  if(!OK){
+    $('nfc-unsupported').style.display='block';
+    $('nfc-why').textContent=!window.isSecureContext?'O NFC só funciona em páginas HTTPS.':'Use o Chrome no Android. O iPhone (Safari) não suporta leitura/gravação NFC na web.';
+    nfcSet('error','Indisponível','Este navegador não suporta Web NFC.');
+  }
+
+  window.nfcStop=function(){ if(ctrl){stop(); if(OK) nfcSet('idle','Pronto','Escolha ler ou gravar uma tag.');} };
+  window.nfcCancel=function(){ stop(); nfcSet('idle','Cancelado','Escolha ler ou gravar uma tag.'); };
+  window.nfcCount=function(){ $('nfc-bytes').textContent=new TextEncoder().encode($('nfc-txt').value).length; };
+  window.nfcCopy=async function(){
+    try{ await navigator.clipboard.writeText(lastText); showToast('Texto copiado!','📋'); }
+    catch(e){ showToast('Não foi possível copiar.','⚠️'); }
+  };
+
+  window.nfcRead=async function(){
+    if(!OK) return;
+    stop(); $('nfc-result').style.display='none';
+    const my=ctrl=new AbortController();
+    try{
+      const ndef=new NDEFReader();
+      await ndef.scan({signal:my.signal});
+      nfcSet('waiting','Aguardando aproximação','Encoste a tag na traseira do celular.');
+      ndef.onreadingerror=()=>{ nfcSet('error','Erro de leitura','Tag não suportada ou sem dados NDEF. Reaproxime.'); stop(); };
+      ndef.onreading=ev=>{
+        show(ev.message,ev.serialNumber);
+        nfcSet('success','Lido com sucesso','Aproxime outra tag para ler novamente, ou cancele.');
+        $('nfc-btn-cancel').style.display='flex';
+      };
+    }catch(e){ if(e.name!=='AbortError') nfcSet('error','Não foi possível ler',explain(e)); stop(); }
+  };
+
+  window.nfcWrite=async function(){
+    if(!OK) return;
+    const text=$('nfc-txt').value.trim();
+    if(!text){ nfcSet('error','Nada para gravar','Digite um texto antes de gravar.'); return; }
+    stop(); const my=ctrl=new AbortController();
+    try{
+      const ndef=new NDEFReader();
+      nfcSet('waiting','Aproxime a tag para gravar','Mantenha a tag parada até concluir.');
+      const isUrl=/^https?:\/\/\S+$/i.test(text);
+      await ndef.write({records:[{recordType:isUrl?'url':'text',data:text}]},{overwrite:true,signal:my.signal});
+      nfcSet('success','Gravado com sucesso','O conteúdo anterior da tag foi substituído.');
+      showToast('Tag gravada!','📡');
+    }catch(e){ if(e.name!=='AbortError') nfcSet('error','Falha na gravação',explain(e)); }
+    finally{ if(ctrl===my) ctrl=null; }
+  };
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden) window.nfcStop(); });
+})();
 
 </script>
 </body>

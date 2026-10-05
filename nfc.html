@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tags NFC · Vertomaker</title>
+<style>
+  /* Ajuste estas variáveis para casar com o tema do Vertomaker */
+  :root{
+    --bg:#f4f5f7; --card:#ffffff; --text:#1b1f27; --muted:#6a7280; --line:#dfe3e9;
+    --accent:#2f5bea; --ok:#1f9d55; --err:#d64545; --warn:#e08a00;
+    --r:14px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#12151b;--card:#1b2029;--text:#eef1f6;--muted:#9aa3b2;--line:#2b323e}
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg);color:var(--text);
+    font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    padding:env(safe-area-inset-top,0) 16px calc(24px + env(safe-area-inset-bottom,0));
+  }
+  main{max-width:520px;margin:0 auto}
+  header{display:flex;align-items:center;gap:10px;padding:16px 0 8px}
+  header a{color:var(--muted);text-decoration:none;font-size:15px}
+  h1{font-size:20px;margin:0;font-weight:650}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-top:14px}
+  #status{display:flex;gap:14px;align-items:center;border-left:6px solid var(--muted)}
+  #status[data-s=waiting]{border-color:var(--accent)}
+  #status[data-s=working]{border-color:var(--warn)}
+  #status[data-s=success]{border-color:var(--ok)}
+  #status[data-s=error]{border-color:var(--err)}
+  #icon{font-size:34px;width:42px;text-align:center}
+  #status[data-s=waiting] #icon{animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{50%{transform:scale(1.18);opacity:.6}}
+  @media (prefers-reduced-motion:reduce){#status[data-s=waiting] #icon{animation:none}}
+  #title{font-weight:650}
+  #msg{color:var(--muted);font-size:14px;margin-top:2px}
+  button{
+    width:100%;min-height:52px;border-radius:12px;border:1px solid transparent;
+    font:inherit;font-weight:600;cursor:pointer;margin-top:12px
+  }
+  button:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .primary{background:var(--accent);color:#fff}
+  .secondary{background:transparent;color:var(--accent);border-color:var(--accent)}
+  .ghost{background:transparent;color:var(--muted);border-color:var(--line)}
+  label{display:block;font-weight:600;margin-bottom:8px}
+  textarea{
+    width:100%;min-height:96px;resize:vertical;padding:12px;border-radius:12px;
+    border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit
+  }
+  .count{color:var(--muted);font-size:13px;text-align:right;margin-top:4px}
+  #result h2{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+  .rec{padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-top:8px;word-break:break-word;white-space:pre-wrap}
+  .rec small{display:block;color:var(--muted);margin-bottom:2px}
+  .copy{min-height:40px;margin-top:10px}
+  #unsupported{display:none;border-left:6px solid var(--err)}
+  hr{border:0;border-top:1px solid var(--line);margin:22px 0 2px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <a href="index.html" aria-label="Voltar ao Vertomaker">‹ Voltar</a>
+    <h1>Tags NFC</h1>
+  </header>
+
+  <section id="unsupported" class="card" role="alert">
+    <strong>NFC não disponível neste navegador.</strong>
+    <p id="why" style="margin:6px 0 0;color:var(--muted);font-size:14px"></p>
+  </section>
+
+  <section id="status" class="card" data-s="idle" aria-live="polite">
+    <div id="icon">📡</div>
+    <div>
+      <div id="title">Pronto</div>
+      <div id="msg">Escolha ler ou gravar uma tag.</div>
+    </div>
+  </section>
+
+  <button id="btnRead" class="primary">Ler tag NFC</button>
+
+  <section id="result" class="card" hidden>
+    <h2>Conteúdo lido</h2>
+    <div id="records"></div>
+    <button id="btnCopy" class="ghost copy">Copiar texto</button>
+  </section>
+
+  <hr>
+
+  <section class="card">
+    <label for="txt">Texto para gravar</label>
+    <textarea id="txt" placeholder="Ex.: https://vertomaker.com.br/pedido/123"></textarea>
+    <div class="count"><span id="bytes">0</span> bytes</div>
+    <button id="btnWrite" class="secondary">Gravar / regravar tag</button>
+  </section>
+
+  <button id="btnCancel" class="ghost" hidden>Cancelar</button>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const ui = {
+    status:$('status'), icon:$('icon'), title:$('title'), msg:$('msg'),
+    read:$('btnRead'), write:$('btnWrite'), cancel:$('btnCancel'), copy:$('btnCopy'),
+    result:$('result'), records:$('records'), txt:$('txt'), bytes:$('bytes')
+  };
+  const ICONS = {idle:'📡', waiting:'📲', working:'⏳', success:'✅', error:'⚠️'};
+  let ctrl = null;          // AbortController da operação em andamento
+  let lastText = '';
+
+  // ---- Suporte -----------------------------------------------------------
+  if (!('NDEFReader' in window)) {
+    $('unsupported').style.display = 'block';
+    $('why').textContent = !window.isSecureContext
+      ? 'O NFC só funciona em páginas HTTPS.'
+      : 'Use o Chrome no Android. O iPhone (Safari) não suporta leitura/gravação NFC na web.';
+    ui.read.disabled = ui.write.disabled = true;
+    set('error', 'Indisponível', 'Este navegador não suporta Web NFC.');
+  }
+
+  // ---- UI helpers --------------------------------------------------------
+  function set(state, title, msg){
+    ui.status.dataset.s = state;
+    ui.icon.textContent = ICONS[state];
+    ui.title.textContent = title;
+    ui.msg.textContent = msg || '';
+    const busy = state === 'waiting' || state === 'working';
+    ui.read.disabled = ui.write.disabled = busy || !('NDEFReader' in window);
+    ui.cancel.hidden = !busy;
+  }
+
+  function explain(e){
+    switch (e.name) {
+      case 'NotAllowedError':  return 'Permissão negada. Ative o NFC no aparelho e permita o acesso quando o Chrome pedir.';
+      case 'NotSupportedError':return 'NFC não suportado ou desativado neste aparelho.';
+      case 'NotReadableError': return 'Não foi possível ler. Verifique se o NFC está ligado e reaproxime a tag.';
+      case 'NetworkError':     return 'Falha na gravação. Mantenha a tag parada junto ao aparelho. Ela pode ser protegida ou incompatível.';
+      case 'InvalidStateError':return 'Outra operação NFC está em andamento. Cancele e tente de novo.';
+      case 'SyntaxError':      return 'Conteúdo inválido para gravar.';
+      default:                 return e.message || 'Erro desconhecido.';
+    }
+  }
+
+  function decode(rec){
+    const dec = enc => new TextDecoder(enc || 'utf-8');
+    switch (rec.recordType) {
+      case 'text':  return {tipo:'Texto' + (rec.lang ? ' (' + rec.lang + ')' : ''), val: dec(rec.encoding).decode(rec.data)};
+      case 'url':
+      case 'absolute-url': return {tipo:'URL', val: dec().decode(rec.data)};
+      case 'mime':  return {tipo:'MIME ' + (rec.mediaType || ''), val: dec().decode(rec.data)};
+      case 'empty': return {tipo:'Vazio', val:'(registro vazio)'};
+      default: {
+        const hex = [...new Uint8Array(rec.data.buffer)].map(b => b.toString(16).padStart(2,'0')).join(' ');
+        return {tipo:rec.recordType, val:hex};
+      }
+    }
+  }
+
+  function show(message, serial){
+    ui.records.textContent = '';
+    const texts = [];
+    if (!message.records.length) {
+      ui.records.innerHTML = '<div class="rec">Tag vazia.</div>';
+    }
+    message.records.forEach(r => {
+      const d = decode(r);
+      texts.push(d.val);
+      const el = document.createElement('div');
+      el.className = 'rec';
+      const s = document.createElement('small');
+      s.textContent = d.tipo;
+      el.append(s, d.val);
+      ui.records.append(el);
+    });
+    if (serial) {
+      const el = document.createElement('div');
+      el.className = 'rec';
+      el.innerHTML = '<small>Serial</small>';
+      el.append(serial);
+      ui.records.append(el);
+    }
+    lastText = texts.join('\n');
+    ui.result.hidden = false;
+  }
+
+  function stop(){ if (ctrl) { ctrl.abort(); ctrl = null; } }
+
+  // ---- Ler ---------------------------------------------------------------
+  ui.read.addEventListener('click', async () => {
+    stop();
+    ui.result.hidden = true;
+    ctrl = new AbortController();
+    const my = ctrl;
+    try {
+      const ndef = new NDEFReader();
+      await ndef.scan({signal: my.signal});
+      set('waiting', 'Aguardando aproximação', 'Encoste a tag na traseira do celular.');
+      ndef.onreadingerror = () => {
+        set('error', 'Erro de leitura', 'Tag não suportada ou sem dados NDEF. Reaproxime.');
+        stop();
+      };
+      ndef.onreading = ev => {
+        set('working', 'Lendo…', '');
+        show(ev.message, ev.serialNumber);
+        set('success', 'Lido com sucesso', 'Aproxime outra tag para ler novamente, ou cancele.');
+        // mantém a sessão aberta; o botão Cancelar encerra
+      };
+    } catch (e) {
+      if (e.name !== 'AbortError') set('error', 'Não foi possível ler', explain(e));
+      stop();
+    }
+  });
+
+  // ---- Gravar / regravar -------------------------------------------------
+  ui.write.addEventListener('click', async () => {
+    const text = ui.txt.value.trim();
+    if (!text) { set('error', 'Nada para gravar', 'Digite um texto antes de gravar.'); return; }
+    stop();
+    ctrl = new AbortController();
+    const my = ctrl;
+    try {
+      const ndef = new NDEFReader();
+      set('waiting', 'Aproxime a tag para gravar', 'Mantenha a tag parada até concluir.');
+      const isUrl = /^https?:\/\/\S+$/i.test(text);
+      const record = isUrl ? {recordType:'url', data:text} : {recordType:'text', data:text};
+      await ndef.write({records:[record]}, {overwrite:true, signal:my.signal});
+      set('success', 'Gravado com sucesso', 'O conteúdo anterior da tag foi substituído.');
+    } catch (e) {
+      if (e.name !== 'AbortError') set('error', 'Falha na gravação', explain(e));
+    } finally { if (ctrl === my) ctrl = null; }
+  });
+
+  // ---- Cancelar / copiar / contador --------------------------------------
+  ui.cancel.addEventListener('click', () => {
+    stop();
+    set('idle', 'Cancelado', 'Escolha ler ou gravar uma tag.');
+  });
+  ui.copy.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(lastText); ui.copy.textContent = 'Copiado'; }
+    catch { ui.copy.textContent = 'Não foi possível copiar'; }
+    setTimeout(() => ui.copy.textContent = 'Copiar texto', 1500);
+  });
+  ui.txt.addEventListener('input', () => {
+    ui.bytes.textContent = new TextEncoder().encode(ui.txt.value).length;
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+})();
+</script>
+</body>
+</html>
