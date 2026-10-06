@@ -2191,6 +2191,7 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
       </div>
       <div class="card nfc-block">
         <label class="nfc-toggle"><input type="checkbox" id="nfc-multi-on" onchange="nfcToggleMulti()"> Gravar múltiplos registros na mesma tag</label>
+        <label class="nfc-toggle" style="margin-top:10px"><input type="checkbox" id="nfc-batch-on" onchange="nfcToggleBatch()"> Modo lote: gravar várias tags seguidas</label>
         <div id="nfc-single" class="form-group" style="margin-top:12px">
           <label class="form-label" for="nfc-txt">Texto ou URL para gravar</label>
           <textarea class="form-input" id="nfc-txt" placeholder="Ex.: https://g.page/r/..." oninput="nfcCount()"></textarea>
@@ -6092,8 +6093,50 @@ detectarPromptInstalacao();
     nfcSet('error','Indisponível','Este navegador não suporta Web NFC.');
   }
 
-  window.nfcStop=function(){ if(ctrl){stop(); if(OK) nfcSet('idle','Pronto','Escolha ler ou gravar uma tag.');} };
-  window.nfcCancel=function(){ stop(); nfcSet('idle','Cancelado','Escolha ler ou gravar uma tag.'); };
+  window.nfcStop=function(){ if(ctrl){stop(); $('nfc-btn-cancel').textContent='Cancelar'; if(OK) nfcSet('idle','Pronto','Escolha ler ou gravar uma tag.');} };
+  let batchN=0;
+  window.nfcCancel=function(){
+    stop(); $('nfc-btn-cancel').textContent='Cancelar';
+    if(batchN>0){ nfcSet('success','Lote encerrado',batchN+(batchN>1?' tags gravadas.':' tag gravada.')); batchN=0; }
+    else nfcSet('idle','Cancelado','Escolha ler ou gravar uma tag.');
+  };
+  window.nfcToggleBatch=function(){
+    $('nfc-btn-write').textContent=$('nfc-batch-on').checked?'🔁 Iniciar lote':'✍️ Gravar / regravar tag';
+  };
+  async function startBatch(vals){
+    stop(); batchN=0;
+    const my=ctrl=new AbortController();
+    const records=vals.map(t=>({recordType:isUrl(t)?'url':'text',data:t}));
+    const done=new Set(); let busy=false,lastId=null,lastT=0;
+    try{
+      const ndef=new NDEFReader();
+      await ndef.scan({signal:my.signal});
+      $('nfc-btn-cancel').textContent='Encerrar lote';
+      nfcSet('waiting','Lote iniciado','Aproxime a 1ª tag. Gravadas: 0');
+      ndef.onreadingerror=()=>nfcSet('waiting','Tag não reconhecida','Reaproxime. Gravadas: '+batchN);
+      ndef.onreading=async ev=>{
+        const id=ev.serialNumber||'';
+        if(busy) return;
+        if(id && id===lastId && Date.now()-lastT<3000) return;      // eco da tag recém-gravada
+        if(id && done.has(id)){ nfcSet('waiting','Tag já gravada','Aproxime outra tag. Gravadas: '+batchN); return; }
+        busy=true;
+        try{
+          nfcSet('working','Gravando…','Mantenha a tag parada.');
+          await ndef.write({records},{overwrite:true,signal:my.signal});
+          if(id){ done.add(id); lastId=id; lastT=Date.now(); }
+          batchN++;
+          nfcSet('waiting','Tag '+batchN+' gravada ✅','Retire e aproxime a próxima. Gravadas: '+batchN);
+          showToast('Tag '+batchN+' gravada!','📡');
+          if(navigator.vibrate) navigator.vibrate(80);
+        }catch(e){
+          if(e.name!=='AbortError') nfcSet('waiting','Falha nesta tag',explain(e)+' Gravadas: '+batchN);
+        }finally{ busy=false; }
+      };
+    }catch(e){
+      if(e.name!=='AbortError') nfcSet('error','Não foi possível iniciar o lote',explain(e));
+      stop();
+    }
+  }
   const MAXROWS=8;
   const isUrl=t=>/^https?:\/\/\S+$/i.test(t);
   const enc=t=>new TextEncoder().encode(t).length;
@@ -6150,6 +6193,7 @@ detectarPromptInstalacao();
     if(!OK) return;
     const vals=values();
     if(!vals.length){ nfcSet('error','Nada para gravar','Digite ao menos um texto ou URL antes de gravar.'); return; }
+    if($('nfc-batch-on').checked){ return startBatch(vals); }
     stop(); const my=ctrl=new AbortController();
     try{
       const ndef=new NDEFReader();
