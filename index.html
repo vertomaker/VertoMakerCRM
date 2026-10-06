@@ -483,6 +483,11 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
 .nfc-block{padding:18px;}
 .nfc-block .btn{width:100%;justify-content:center;margin-top:12px;min-height:48px;}
 .nfc-block textarea{min-height:92px;resize:vertical;width:100%;}
+.nfc-toggle{display:flex;gap:10px;align-items:center;font-size:13.5px;font-weight:600;cursor:pointer;}
+.nfc-toggle input{width:20px;height:20px;accent-color:var(--accent);}
+.nfc-row{display:flex;gap:8px;margin-top:8px;}
+.nfc-row input{flex:1;min-width:0;}
+.nfc-row button{width:44px;min-height:44px;margin:0;padding:0;flex-shrink:0;justify-content:center;}
 .nfc-count{text-align:right;font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:4px;}
 </style>
 </head>
@@ -2185,11 +2190,17 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
         <button class="btn btn-ghost" onclick="nfcCopy()" id="nfc-btn-copy">Copiar texto</button>
       </div>
       <div class="card nfc-block">
-        <div class="form-group">
-          <label class="form-label" for="nfc-txt">Texto para gravar</label>
-          <textarea class="form-input" id="nfc-txt" placeholder="Ex.: https://vertomaker.com.br/pedido/123" oninput="nfcCount()"></textarea>
-          <div class="nfc-count"><span id="nfc-bytes">0</span> bytes</div>
+        <label class="nfc-toggle"><input type="checkbox" id="nfc-multi-on" onchange="nfcToggleMulti()"> Gravar múltiplos registros na mesma tag</label>
+        <div id="nfc-single" class="form-group" style="margin-top:12px">
+          <label class="form-label" for="nfc-txt">Texto ou URL para gravar</label>
+          <textarea class="form-input" id="nfc-txt" placeholder="Ex.: https://g.page/r/..." oninput="nfcCount()"></textarea>
         </div>
+        <div id="nfc-multi" style="display:none;margin-top:12px">
+          <div class="form-label">Registros (na ordem de gravação)</div>
+          <div id="nfc-list"></div>
+          <button class="btn btn-ghost" id="nfc-btn-add" onclick="nfcAddRow()">+ Adicionar registro</button>
+        </div>
+        <div class="nfc-count">≈ <span id="nfc-bytes">0</span> bytes · NTAG213: 144 · NTAG215: 504 · NTAG216: 888</div>
         <button class="btn btn-orange" id="nfc-btn-write" onclick="nfcWrite()">✍️ Gravar / regravar tag</button>
       </div>
       <button class="btn btn-ghost" id="nfc-btn-cancel" onclick="nfcCancel()" style="display:none;justify-content:center">Cancelar</button>
@@ -6083,7 +6094,36 @@ detectarPromptInstalacao();
 
   window.nfcStop=function(){ if(ctrl){stop(); if(OK) nfcSet('idle','Pronto','Escolha ler ou gravar uma tag.');} };
   window.nfcCancel=function(){ stop(); nfcSet('idle','Cancelado','Escolha ler ou gravar uma tag.'); };
-  window.nfcCount=function(){ $('nfc-bytes').textContent=new TextEncoder().encode($('nfc-txt').value).length; };
+  const MAXROWS=8;
+  const isUrl=t=>/^https?:\/\/\S+$/i.test(t);
+  const enc=t=>new TextEncoder().encode(t).length;
+  const multiOn=()=>$('nfc-multi-on').checked;
+  function rowVals(){ return [...document.querySelectorAll('#nfc-list input')].map(i=>i.value.trim()).filter(Boolean); }
+  function values(){ return multiOn()?rowVals():($('nfc-txt').value.trim()?[$('nfc-txt').value.trim()]:[]); }
+  window.nfcCount=function(){
+    const v=values();
+    $('nfc-bytes').textContent=v.length?v.reduce((n,t)=>n+(isUrl(t)?5:7)+enc(t),3):0;
+  };
+  window.nfcAddRow=function(val){
+    const list=$('nfc-list');
+    if(list.children.length>=MAXROWS){ showToast('Máximo de '+MAXROWS+' registros.','⚠️'); return; }
+    const row=document.createElement('div'); row.className='nfc-row';
+    const inp=document.createElement('input'); inp.className='form-input'; inp.placeholder='Texto ou URL';
+    inp.value=typeof val==='string'?val:''; inp.oninput=window.nfcCount;
+    const del=document.createElement('button'); del.className='btn btn-ghost'; del.textContent='✕'; del.setAttribute('aria-label','Remover registro');
+    del.onclick=()=>{ row.remove(); window.nfcCount(); };
+    row.append(inp,del); list.append(row); window.nfcCount();
+  };
+  window.nfcToggleMulti=function(){
+    const on=multiOn();
+    $('nfc-single').style.display=on?'none':'';
+    $('nfc-multi').style.display=on?'':'none';
+    if(on && !$('nfc-list').children.length){
+      const first=$('nfc-txt').value.trim();
+      window.nfcAddRow(first); window.nfcAddRow();
+    }
+    window.nfcCount();
+  };
   window.nfcCopy=async function(){
     try{ await navigator.clipboard.writeText(lastText); showToast('Texto copiado!','📋'); }
     catch(e){ showToast('Não foi possível copiar.','⚠️'); }
@@ -6108,15 +6148,15 @@ detectarPromptInstalacao();
 
   window.nfcWrite=async function(){
     if(!OK) return;
-    const text=$('nfc-txt').value.trim();
-    if(!text){ nfcSet('error','Nada para gravar','Digite um texto antes de gravar.'); return; }
+    const vals=values();
+    if(!vals.length){ nfcSet('error','Nada para gravar','Digite ao menos um texto ou URL antes de gravar.'); return; }
     stop(); const my=ctrl=new AbortController();
     try{
       const ndef=new NDEFReader();
       nfcSet('waiting','Aproxime a tag para gravar','Mantenha a tag parada até concluir.');
-      const isUrl=/^https?:\/\/\S+$/i.test(text);
-      await ndef.write({records:[{recordType:isUrl?'url':'text',data:text}]},{overwrite:true,signal:my.signal});
-      nfcSet('success','Gravado com sucesso','O conteúdo anterior da tag foi substituído.');
+      const records=vals.map(t=>({recordType:isUrl(t)?'url':'text',data:t}));
+      await ndef.write({records},{overwrite:true,signal:my.signal});
+      nfcSet('success','Gravado com sucesso',(records.length>1?records.length+' registros gravados. ':'')+'O conteúdo anterior da tag foi substituído.');
       showToast('Tag gravada!','📡');
     }catch(e){ if(e.name!=='AbortError') nfcSet('error','Falha na gravação',explain(e)); }
     finally{ if(ctrl===my) ctrl=null; }
