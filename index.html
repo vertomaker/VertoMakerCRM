@@ -2192,6 +2192,8 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
       <div class="card nfc-block">
         <label class="nfc-toggle"><input type="checkbox" id="nfc-multi-on" onchange="nfcToggleMulti()"> Gravar múltiplos registros na mesma tag</label>
         <label class="nfc-toggle" style="margin-top:10px"><input type="checkbox" id="nfc-batch-on" onchange="nfcToggleBatch()"> Modo lote: gravar várias tags seguidas</label>
+        <label class="nfc-toggle" style="margin-top:10px"><input type="checkbox" id="nfc-lock-on"> 🔒 Bloquear contra regravação (irreversível)</label>
+        <div class="nfc-count" id="nfc-lock-hint" style="text-align:left;display:none"></div>
         <div id="nfc-single" class="form-group" style="margin-top:12px">
           <label class="form-label" for="nfc-txt">Texto ou URL para gravar</label>
           <textarea class="form-input" id="nfc-txt" placeholder="Ex.: https://g.page/r/..." oninput="nfcCount()"></textarea>
@@ -6093,10 +6095,19 @@ detectarPromptInstalacao();
     nfcSet('error','Indisponível','Este navegador não suporta Web NFC.');
   }
 
-  window.nfcStop=function(){ if(ctrl){stop(); $('nfc-btn-cancel').textContent='Cancelar'; if(OK) nfcSet('idle','Pronto','Escolha ler ou gravar uma tag.');} };
+  window.nfcStop=function(){ if(ctrl){stop(); unlockBox(); $('nfc-btn-cancel').textContent='Cancelar'; if(OK) nfcSet('idle','Pronto','Escolha ler ou gravar uma tag.');} };
+  const LOCK_OK=OK && typeof NDEFReader.prototype.makeReadOnly==='function';
+  const lockOn=()=>$('nfc-lock-on').checked;
+  const unlockBox=()=>{ $('nfc-lock-on').checked=false; };
+  if(!LOCK_OK){
+    $('nfc-lock-on').disabled=true;
+    $('nfc-lock-hint').style.display='block';
+    $('nfc-lock-hint').textContent=OK?'Este navegador não suporta bloquear tags (atualize o Chrome).':'';
+  }
+  const LOCK_MSG='Depois de gravar, a tag será bloqueada e NUNCA mais poderá ser regravada. Continuar?';
   let batchN=0;
   window.nfcCancel=function(){
-    stop(); $('nfc-btn-cancel').textContent='Cancelar';
+    stop(); unlockBox(); $('nfc-btn-cancel').textContent='Cancelar';
     if(batchN>0){ nfcSet('success','Lote encerrado',batchN+(batchN>1?' tags gravadas.':' tag gravada.')); batchN=0; }
     else nfcSet('idle','Cancelado','Escolha ler ou gravar uma tag.');
   };
@@ -6123,9 +6134,10 @@ detectarPromptInstalacao();
         try{
           nfcSet('working','Gravando…','Mantenha a tag parada.');
           await ndef.write({records},{overwrite:true,signal:my.signal});
+          if(lockOn()){ nfcSet('working','Bloqueando…','Mantenha a tag parada.'); await ndef.makeReadOnly({signal:my.signal}); }
           if(id){ done.add(id); lastId=id; lastT=Date.now(); }
           batchN++;
-          nfcSet('waiting','Tag '+batchN+' gravada ✅','Retire e aproxime a próxima. Gravadas: '+batchN);
+          nfcSet('waiting','Tag '+batchN+(lockOn()?' gravada e bloqueada 🔒':' gravada ✅'),'Retire e aproxime a próxima. Gravadas: '+batchN);
           showToast('Tag '+batchN+' gravada!','📡');
           if(navigator.vibrate) navigator.vibrate(80);
         }catch(e){
@@ -6193,6 +6205,7 @@ detectarPromptInstalacao();
     if(!OK) return;
     const vals=values();
     if(!vals.length){ nfcSet('error','Nada para gravar','Digite ao menos um texto ou URL antes de gravar.'); return; }
+    if(lockOn() && !confirm(LOCK_MSG)){ return; }
     if($('nfc-batch-on').checked){ return startBatch(vals); }
     stop(); const my=ctrl=new AbortController();
     try{
@@ -6200,7 +6213,9 @@ detectarPromptInstalacao();
       nfcSet('waiting','Aproxime a tag para gravar','Mantenha a tag parada até concluir.');
       const records=vals.map(t=>({recordType:isUrl(t)?'url':'text',data:t}));
       await ndef.write({records},{overwrite:true,signal:my.signal});
-      nfcSet('success','Gravado com sucesso',(records.length>1?records.length+' registros gravados. ':'')+'O conteúdo anterior da tag foi substituído.');
+      const locked=lockOn();
+      if(locked){ nfcSet('working','Bloqueando…','Mantenha a tag parada.'); await ndef.makeReadOnly({signal:my.signal}); unlockBox(); }
+      nfcSet('success',locked?'Gravado e bloqueado 🔒':'Gravado com sucesso',(records.length>1?records.length+' registros gravados. ':'')+(locked?'Esta tag não pode mais ser regravada.':'O conteúdo anterior da tag foi substituído.'));
       showToast('Tag gravada!','📡');
     }catch(e){ if(e.name!=='AbortError') nfcSet('error','Falha na gravação',explain(e)); }
     finally{ if(ctrl===my) ctrl=null; }
