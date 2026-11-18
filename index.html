@@ -537,10 +537,14 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
       </div>
       <div class="form-row">
         <div class="form-group">
+          <label class="form-label">Qtd. de Peças</label>
+          <input type="number" class="form-input" placeholder="Ex: 1" min="1" id="nt-qtd">
+        </div>
+        <div class="form-group">
           <label class="form-label">Valor Cobrado (R$)</label>
           <input type="number" class="form-input" placeholder="Ex: 85.00" step="0.01" id="nt-valor">
         </div>
-        <div class="form-group">
+        <div class="form-group" style="grid-column:1/-1">
           <label class="form-label">Observações</label>
           <input type="text" class="form-input" placeholder="Cor, acabamento, etc." id="nt-obs">
         </div>
@@ -1197,10 +1201,14 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
       </div>
       <div class="form-row">
         <div class="form-group">
+          <label class="form-label">Qtd. de Peças</label>
+          <input type="number" class="form-input" min="1" id="et-qtd">
+        </div>
+        <div class="form-group">
           <label class="form-label">Valor Cobrado (R$)</label>
           <input type="number" class="form-input" step="0.01" id="et-valor">
         </div>
-        <div class="form-group">
+        <div class="form-group" style="grid-column:1/-1">
           <label class="form-label">Observações</label>
           <input type="text" class="form-input" id="et-obs">
         </div>
@@ -1484,18 +1492,15 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
       <div class="card">
         <div class="card-header"><div class="card-title">📊 Produção Semanal</div></div>
         <div class="card-body">
-          <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:8px">PEÇAS IMPRESSAS POR DIA</div>
-          <div class="mini-chart" id="mini-chart"></div>
-          <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">
-            <span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SAB</span><span>DOM</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">PEÇAS IMPRESSAS POR DIA</div>
+            <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">TOTAL: <span id="semana-total" style="color:var(--accent)">0</span></div>
           </div>
+          <div class="mini-chart" id="mini-chart"></div>
+          <div id="mini-chart-labels" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px;font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;text-align:center"></div>
           <div style="margin-top:20px">
-            <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:8px">FILAMENTO MAIS USADO</div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>PLA</span><span style="color:var(--accent)">45%</span></div><div class="print-progress"><div class="print-progress-bar" style="width:45%"></div></div></div>
-              <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>PETG</span><span style="color:var(--accent)">28%</span></div><div class="print-progress"><div class="print-progress-bar" style="width:28%;background:linear-gradient(90deg,var(--accent2),#ff0055)"></div></div></div>
-              <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Resina</span><span style="color:var(--accent)">18%</span></div><div class="print-progress"><div class="print-progress-bar" style="width:18%;background:linear-gradient(90deg,var(--accent3),#00ffaa)"></div></div></div>
-            </div>
+            <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:8px">FILAMENTO MAIS USADO · SEMANA</div>
+            <div id="semana-filamentos" style="display:flex;flex-direction:column;gap:8px"></div>
           </div>
         </div>
       </div>
@@ -2670,6 +2675,7 @@ function renderFinalizadas(){
   if(!el)return;
   document.getElementById('badge-finalizadas').textContent=finalizadas.length;
   document.getElementById('dash-concluidas').textContent=finalizadas.length;
+  renderMiniChart();
   el.innerHTML=finalizadas.length===0
     ?`<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Nenhuma tarefa finalizada ainda.</div></div>`
     :finalizadas.map(t=>`<div class="task-item">
@@ -2700,12 +2706,13 @@ function addTask(){
   const mat=document.getElementById('nt-material').value;
   const weight=parseInt(document.getElementById('nt-weight').value)||50;
   const valor=parseFloat(document.getElementById('nt-valor').value)||0;
+  const qtd=Math.max(1,parseInt(document.getElementById('nt-qtd').value)||1);
   const obs=document.getElementById('nt-obs').value.trim();
-  tasks.push({id:nextId++,name,client,material:mat,weight,deadline:date,valor,obs,progress:0});
+  tasks.push({id:nextId++,name,client,material:mat,weight,qtd,deadline:date,valor,obs,progress:0});
   renderTasks();
   salvarDB();
   closeModal('modal-task');
-  ['nt-name','nt-client','nt-date','nt-weight','nt-valor','nt-obs'].forEach(id=>document.getElementById(id).value='');
+  ['nt-name','nt-client','nt-date','nt-weight','nt-qtd','nt-valor','nt-obs'].forEach(id=>document.getElementById(id).value='');
   showToast('🖨️ Tarefa "'+name+'" criada com sucesso!');
 }
 
@@ -2716,7 +2723,7 @@ function finishTask(id){
   // Tenta descontar do estoque automaticamente
   const consumido = consumirEstoqueTarefa(t.material, t.weight);
   const now=new Date();
-  finalizadas.unshift({...t,deliveredAt:now.toLocaleDateString('pt-BR')});
+  finalizadas.unshift({...t,deliveredAt:now.toLocaleDateString('pt-BR'),deliveredTs:now.getTime()});
   tasks=tasks.filter(x=>x.id!==id);
   renderTasks();
 
@@ -2772,6 +2779,7 @@ function abrirEdicaoTarefa(id){
   document.getElementById('et-date').value=t.deadline;
   document.getElementById('et-material').value=t.material;
   document.getElementById('et-weight').value=t.weight;
+  document.getElementById('et-qtd').value=t.qtd||1;
   document.getElementById('et-valor').value=t.valor||0;
   document.getElementById('et-obs').value=t.obs||'';
   openModal('modal-editar-tarefa');
@@ -2784,6 +2792,7 @@ function salvarEdicaoTarefa(){
   t.deadline=document.getElementById('et-date').value||t.deadline;
   t.material=document.getElementById('et-material').value;
   t.weight=parseInt(document.getElementById('et-weight').value)||t.weight;
+  t.qtd=Math.max(1,parseInt(document.getElementById('et-qtd').value)||1);
   t.valor=parseFloat(document.getElementById('et-valor').value)||0;
   t.obs=document.getElementById('et-obs').value.trim();
   renderTasks();
@@ -4981,11 +4990,56 @@ function renderCalendar(){
 
 function mudarMes(dir){calOffset+=dir;renderCalendar();}
 
-// ===================== MINI CHART =====================
+// ===================== PRODUÇÃO SEMANAL (dados reais) =====================
+// Considera tarefas finalizadas na semana atual (segunda a domingo).
+// Peças = soma de "qtd" (tarefas antigas sem qtd contam como 1).
+// Filamento = gramas por família de material (PLA, PETG, ABS...).
+function _dataFinalizacao(t){
+  if(t.deliveredTs) return new Date(t.deliveredTs);
+  const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(t.deliveredAt||'');
+  return m ? new Date(+m[3],+m[2]-1,+m[1]) : null;
+}
+function _familiaMaterial(mat){
+  const m=String(mat||'').trim();
+  if(/^resina/i.test(m)) return 'Resina';
+  const f=/^(PLA|PETG|ABS|ASA|TPU|HIPS|PC|PA|NYLON)/i.exec(m);
+  if(f) return f[1].toUpperCase();
+  return m.split(/\s+/)[0] || 'Outros';
+}
 function renderMiniChart(){
-  const data=[3,5,4,7,6,8,2];
-  const max=Math.max(...data);
-  document.getElementById('mini-chart').innerHTML=data.map(v=>`<div class="chart-bar" style="height:${v/max*100}%"></div>`).join('');
+  const chartEl=document.getElementById('mini-chart');
+  if(!chartEl) return;
+  const now=new Date();
+  const ini=new Date(now.getFullYear(),now.getMonth(),now.getDate()-((now.getDay()+6)%7)); // segunda 00:00
+  const fim=new Date(ini.getFullYear(),ini.getMonth(),ini.getDate()+7);
+  const hojeIdx=(now.getDay()+6)%7;
+  const pecas=[0,0,0,0,0,0,0];
+  const gramas={};
+  finalizadas.forEach(t=>{
+    const d=_dataFinalizacao(t);
+    if(!d||d<ini||d>=fim) return;
+    pecas[(d.getDay()+6)%7]+=Math.max(1,parseInt(t.qtd)||1);
+    const fam=_familiaMaterial(t.material);
+    gramas[fam]=(gramas[fam]||0)+(parseFloat(t.weight)||0);
+  });
+  const total=pecas.reduce((a,b)=>a+b,0);
+  const max=Math.max(...pecas,1);
+  chartEl.innerHTML=pecas.map((v,i)=>`<div class="chart-bar" title="${v} peça${v===1?'':'s'}" style="height:${v?Math.max(v/max*100,8):0}%;min-height:3px;${i===hojeIdx?'background:rgba(0,212,255,.45);':''}"></div>`).join('');
+  const dias=['SEG','TER','QUA','QUI','SEX','SÁB','DOM'];
+  document.getElementById('mini-chart-labels').innerHTML=dias.map((d,i)=>`<div style="${i===hojeIdx?'color:var(--accent)':''}">${d}<div style="margin-top:2px;color:var(--text-primary);font-size:11px">${pecas[i]}</div></div>`).join('');
+  document.getElementById('semana-total').textContent=total;
+
+  const fil=document.getElementById('semana-filamentos');
+  const totalG=Object.values(gramas).reduce((a,b)=>a+b,0);
+  if(!totalG){
+    fil.innerHTML=`<div style="font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">Nenhum consumo registrado nesta semana.</div>`;
+    return;
+  }
+  const cores=['','background:linear-gradient(90deg,var(--accent2),#ff0055)','background:linear-gradient(90deg,var(--accent3),#00ffaa)','background:linear-gradient(90deg,#f5a623,#ffd166)'];
+  fil.innerHTML=Object.entries(gramas).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([nome,g],i)=>{
+    const pct=Math.round(g/totalG*100);
+    return `<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>${nome}</span><span style="color:var(--accent)">${pct}% · ${Math.round(g)}g</span></div><div class="print-progress"><div class="print-progress-bar" style="width:${pct}%;${cores[i]||''}"></div></div></div>`;
+  }).join('');
 }
 
 // ===================== DASHBOARD STATS =====================
