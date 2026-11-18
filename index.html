@@ -127,6 +127,11 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 /* FORMS */
 .orcamento-form{display:grid;gap:16px;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.mm-row{display:grid;grid-template-columns:1fr 100px 38px;gap:8px;margin-bottom:8px;align-items:center;}
+.mm-row .mm-outro{grid-column:1/-1;}
+.mm-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:2px;}
+.mm-total{font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;}
+.mm-total b{color:var(--accent);}
 .form-group{display:flex;flex-direction:column;gap:7px;}
 .form-label{font-size:11px;color:var(--text-secondary);font-weight:600;letter-spacing:1px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;}
 .form-input{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-family:'Exo 2',sans-serif;font-size:14px;transition:border-color .2s;outline:none;}
@@ -521,19 +526,9 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
           <input type="date" class="form-input" id="nt-date">
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Material</label>
-          <select class="form-input" id="nt-material">
-            <option>PLA Branco</option><option>PLA Preto</option>
-            <option>PETG Transparente</option><option>ABS Cinza</option>
-            <option>Resina Standard</option><option>TPU Flexível</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Peso Estimado (g)</label>
-          <input type="number" class="form-input" placeholder="Ex: 120" id="nt-weight">
-        </div>
+      <div class="form-group">
+        <label class="form-label">Materiais (do estoque)</label>
+        <div id="nt-mm"></div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -1185,19 +1180,9 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
           <input type="date" class="form-input" id="et-date">
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Material</label>
-          <select class="form-input" id="et-material">
-            <option>PLA Branco</option><option>PLA Preto</option>
-            <option>PETG Transparente</option><option>ABS Cinza</option>
-            <option>Resina Standard</option><option>TPU Flexível</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Peso Estimado (g)</label>
-          <input type="number" class="form-input" id="et-weight">
-        </div>
+      <div class="form-group">
+        <label class="form-label">Materiais (do estoque)</label>
+        <div id="et-mm"></div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -2533,7 +2518,7 @@ function restaurarBackup(ev){
 
 // ===================== UTILS =====================
 function fmt(v){return'R$ '+v.toFixed(2).replace('.',',');}
-function openModal(id){document.getElementById(id).classList.add('show');}
+function openModal(id){if(id==='modal-task'&&typeof mmReset==='function')mmReset('nt');document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');}));
 
@@ -2645,7 +2630,7 @@ function renderTasks(){
         <div class="task-status running">🔄</div>
         <div class="task-info">
           <div class="task-name">${t.name} — ${t.client}</div>
-          <div class="task-meta">${t.material} · ${t.weight}g · ${t.progress}% concluído${t.obs?' · '+t.obs:''}</div>
+          <div class="task-meta">${_matLabel(t)} · ${t.weight}g · ${t.progress}% concluído${t.obs?' · '+t.obs:''}</div>
           <div class="print-progress" style="margin-top:6px;width:160px"><div class="print-progress-bar" style="width:${t.progress}%"></div></div>
         </div>
         <span class="task-deadline ${urg}">${lbl}</span>
@@ -2680,7 +2665,7 @@ function renderFinalizadas(){
     ?`<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Nenhuma tarefa finalizada ainda.</div></div>`
     :finalizadas.map(t=>`<div class="task-item">
         <div class="task-status done">✅</div>
-        <div class="task-info"><div class="task-name">${t.name} — ${t.client}</div><div class="task-meta">${t.material} · ${t.weight}g · Entregue ${t.deliveredAt}</div></div>
+        <div class="task-info"><div class="task-name">${t.name} — ${t.client}</div><div class="task-meta">${_matLabel(t)} · ${t.weight}g · Entregue ${t.deliveredAt}</div></div>
         <span class="task-deadline ok" style="margin-right:8px">${fmt(t.valor||0)}</span>
         <span class="task-deadline ok">ENTREGUE</span>
         <div class="task-actions">
@@ -2699,20 +2684,124 @@ function removerFinalizada(id){
   showToast('🗑️ "'+t.name+'" removida do histórico.','🗑️');
 }
 
+// ===================== MATERIAIS DA TAREFA (do estoque, vários por tarefa) =====================
+// Cada tarefa nova guarda t.materiais = [{estoqueId, nome, peso}]. Para manter o resto do app
+// funcionando, t.material (nomes unidos por " + ") e t.weight (soma) continuam existindo.
+const mmState={nt:[],et:[]};
+function _mmUnid(e){return e&&e.tipo==='SLA/MSLA'?'ml':'g';}
+function _mmEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function _matLabel(t){
+  return (t.materiais&&t.materiais.length>1)?t.materiais.map(m=>m.nome+' '+m.peso+'g').join(' + '):t.material;
+}
+function mmReset(p,lista){
+  mmState[p]=(lista&&lista.length)?lista.map(x=>({...x})):[{sel:'',outro:'',peso:''}];
+  mmRender(p);
+}
+function mmRender(p){
+  const el=document.getElementById(p+'-mm');
+  if(!el)return;
+  const rows=mmState[p];
+  const aviso=estoque.length===0?`<div style="font-size:12px;color:var(--warning);margin-bottom:8px">Nenhum material no estoque ainda. Cadastre em Estoque ou use "Outro (fora do estoque)".</div>`:'';
+  const linhas=rows.map((r,i)=>{
+    const opts=estoque.map(e=>`<option value="${e.id}" ${String(r.sel)===String(e.id)?'selected':''}>${_mmEsc(e.nome)} (${e.atual}${_mmUnid(e)})</option>`).join('');
+    return `<div class="mm-row">
+      <select class="form-input" onchange="mmSet('${p}',${i},'sel',this.value,true)">
+        <option value="">Selecione o material…</option>${opts}
+        <option value="outro" ${r.sel==='outro'?'selected':''}>✏️ Outro (fora do estoque)</option>
+      </select>
+      <input type="number" class="form-input" placeholder="Peso (g)" min="0" step="any" value="${_mmEsc(r.peso)}" oninput="mmSet('${p}',${i},'peso',this.value,false)">
+      ${rows.length>1?`<button type="button" class="btn btn-danger" style="padding:8px 0" onclick="mmRemove('${p}',${i})" title="Remover material">✕</button>`:'<div></div>'}
+      ${r.sel==='outro'?`<input type="text" class="form-input mm-outro" placeholder="Nome do material" value="${_mmEsc(r.outro)}" oninput="mmSet('${p}',${i},'outro',this.value,false)">`:''}
+    </div>`;
+  }).join('');
+  el.innerHTML=aviso+linhas+`<div class="mm-foot"><button type="button" class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="mmAdd('${p}')">+ Adicionar material</button><span class="mm-total">Peso total: <b id="${p}-mm-total">0</b> g</span></div>`;
+  mmTotal(p);
+}
+function mmTotal(p){
+  const t=mmState[p].reduce((s,r)=>s+(parseFloat(r.peso)||0),0);
+  const el=document.getElementById(p+'-mm-total');
+  if(el)el.textContent=parseFloat(t.toFixed(1));
+}
+function mmSet(p,i,campo,val,rerender){
+  if(!mmState[p][i])return;
+  mmState[p][i][campo]=val;
+  if(rerender)mmRender(p);else mmTotal(p);
+}
+function mmAdd(p){mmState[p].push({sel:'',outro:'',peso:''});mmRender(p);}
+function mmRemove(p,i){mmState[p].splice(i,1);if(!mmState[p].length)mmState[p].push({sel:'',outro:'',peso:''});mmRender(p);}
+// Lê as linhas preenchidas; devolve null (com aviso) se alguma estiver incompleta.
+function mmCollect(p){
+  const out=[];
+  for(const r of mmState[p]){
+    const peso=parseFloat(r.peso)||0;
+    if(r.sel===''&&!peso)continue;
+    if(r.sel===''){showToast('⚠️ Escolha o material em todas as linhas.','⚠️');return null;}
+    if(r.sel==='outro'){
+      const nome=(r.outro||'').trim();
+      if(!nome){showToast('⚠️ Informe o nome do material em "Outro".','⚠️');return null;}
+      out.push({estoqueId:null,nome,peso});
+    }else{
+      const e=estoque.find(x=>String(x.id)===String(r.sel));
+      if(!e){showToast('⚠️ Material não encontrado no estoque.','⚠️');return null;}
+      out.push({estoqueId:e.id,nome:e.nome,peso});
+    }
+  }
+  return out;
+}
+function _mmResumo(lista){
+  return {
+    material:lista.length?lista.map(m=>m.nome).join(' + '):'Não informado',
+    weight:parseFloat(lista.reduce((s,m)=>s+m.peso,0).toFixed(1))
+  };
+}
+// Converte uma tarefa (nova ou antiga) em linhas para o modal de edição.
+function _mmDeTarefa(t){
+  const lista=(t.materiais&&t.materiais.length)?t.materiais
+    :(t.material&&t.material!=='Não informado'?[{estoqueId:null,nome:t.material,peso:t.weight}]:[]);
+  return lista.map(m=>{
+    let e=m.estoqueId!=null?estoque.find(x=>x.id===m.estoqueId):null;
+    if(!e&&m.estoqueId==null)e=estoque.find(x=>x.nome.toLowerCase()===String(m.nome).toLowerCase());
+    return e?{sel:String(e.id),outro:'',peso:m.peso}:{sel:'outro',outro:m.nome,peso:m.peso};
+  });
+}
+// Baixa no estoque ao finalizar: um desconto por material da tarefa.
+function consumirEstoqueMateriais(t){
+  if(!Array.isArray(t.materiais)){ // tarefa antiga (só texto)
+    const ok=consumirEstoqueTarefa(t.material,t.weight);
+    return {ok:ok?[{nome:t.material,peso:t.weight}]:[],semEstoque:ok?[]:[t.material]};
+  }
+  const ok=[],semEstoque=[];
+  t.materiais.forEach(m=>{
+    const peso=parseFloat(m.peso)||0;
+    const e=m.estoqueId!=null?estoque.find(x=>x.id===m.estoqueId):null;
+    if(!e){semEstoque.push(m.nome);return;}
+    if(peso<=0)return;
+    if(e.atual<peso){semEstoque.push(m.nome+' (insuficiente: '+e.atual+_mmUnid(e)+')');return;}
+    e.atual=parseFloat((e.atual-peso).toFixed(1));
+    ok.push({nome:e.nome,peso});
+  });
+  if(ok.length){renderEstoque();salvarDB();}
+  return {ok,semEstoque};
+}
+
 function addTask(){
   const name=document.getElementById('nt-name').value.trim()||'Nova Tarefa';
   const client=document.getElementById('nt-client').value.trim()||'Cliente';
   const date=document.getElementById('nt-date').value||'2025-04-01';
-  const mat=document.getElementById('nt-material').value;
-  const weight=parseInt(document.getElementById('nt-weight').value)||50;
+  const lista=mmCollect('nt');
+  if(!lista)return;
+  const resumo=_mmResumo(lista);
+  const mat=resumo.material;
+  const weight=resumo.weight;
   const valor=parseFloat(document.getElementById('nt-valor').value)||0;
   const qtd=Math.max(1,parseInt(document.getElementById('nt-qtd').value)||1);
   const obs=document.getElementById('nt-obs').value.trim();
-  tasks.push({id:nextId++,name,client,material:mat,weight,qtd,deadline:date,valor,obs,progress:0});
+  tasks.push({id:nextId++,name,client,material:mat,weight,materiais:lista,qtd,deadline:date,valor,obs,progress:0});
   renderTasks();
   salvarDB();
   closeModal('modal-task');
-  ['nt-name','nt-client','nt-date','nt-weight','nt-qtd','nt-valor','nt-obs'].forEach(id=>document.getElementById(id).value='');
+  ['nt-name','nt-client','nt-date','nt-qtd','nt-valor','nt-obs'].forEach(id=>document.getElementById(id).value='');
+  mmReset('nt');
   showToast('🖨️ Tarefa "'+name+'" criada com sucesso!');
 }
 
@@ -2721,7 +2810,7 @@ function finishTask(id){
   if(!t)return;
 
   // Tenta descontar do estoque automaticamente
-  const consumido = consumirEstoqueTarefa(t.material, t.weight);
+  const consumo = consumirEstoqueMateriais(t);
   const now=new Date();
   finalizadas.unshift({...t,deliveredAt:now.toLocaleDateString('pt-BR'),deliveredTs:now.getTime()});
   tasks=tasks.filter(x=>x.id!==id);
@@ -2739,8 +2828,8 @@ function finishTask(id){
 
   salvarDB();
 
-  if(consumido){
-    showToast('✅ Tarefa concluída! 📉 '+t.weight+'g de "'+t.material+'" descontados do estoque.');
+  if(consumo.ok.length){
+    showToast('✅ Tarefa concluída! 📉 '+consumo.ok.map(m=>m.peso+'g de "'+m.nome+'"').join(' + ')+' descontados do estoque.'+(consumo.semEstoque.length?' ⚠️ Sem baixa: '+consumo.semEstoque.join(', ')+'.':''));
   } else if(!t.clienteId){
     showToast('✅ Tarefa "'+t.name+'" concluída! (Material não encontrado no estoque)');
   }
@@ -2777,8 +2866,7 @@ function abrirEdicaoTarefa(id){
   document.getElementById('et-name').value=t.name;
   document.getElementById('et-client').value=t.client;
   document.getElementById('et-date').value=t.deadline;
-  document.getElementById('et-material').value=t.material;
-  document.getElementById('et-weight').value=t.weight;
+  mmReset('et',_mmDeTarefa(t));
   document.getElementById('et-qtd').value=t.qtd||1;
   document.getElementById('et-valor').value=t.valor||0;
   document.getElementById('et-obs').value=t.obs||'';
@@ -2787,11 +2875,15 @@ function abrirEdicaoTarefa(id){
 function salvarEdicaoTarefa(){
   const t=tasks.find(x=>x.id===editTarefaId);
   if(!t)return;
+  const lista=mmCollect('et');
+  if(!lista)return;
+  const resumo=_mmResumo(lista);
+  t.materiais=lista;
+  t.material=resumo.material;
+  t.weight=resumo.weight;
   t.name=document.getElementById('et-name').value.trim()||t.name;
   t.client=document.getElementById('et-client').value.trim()||t.client;
   t.deadline=document.getElementById('et-date').value||t.deadline;
-  t.material=document.getElementById('et-material').value;
-  t.weight=parseInt(document.getElementById('et-weight').value)||t.weight;
   t.qtd=Math.max(1,parseInt(document.getElementById('et-qtd').value)||1);
   t.valor=parseFloat(document.getElementById('et-valor').value)||0;
   t.obs=document.getElementById('et-obs').value.trim();
@@ -4999,10 +5091,10 @@ function _dataFinalizacao(t){
   const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(t.deliveredAt||'');
   return m ? new Date(+m[3],+m[2]-1,+m[1]) : null;
 }
-function _familiaMaterial(mat){
+function _familiaMaterial(mat,tipo){
   const m=String(mat||'').trim();
-  if(/^resina/i.test(m)) return 'Resina';
-  const f=/^(PLA|PETG|ABS|ASA|TPU|HIPS|PC|PA|NYLON)/i.exec(m);
+  if(tipo==='SLA/MSLA'||/resina|resin/i.test(m)) return 'Resina';
+  const f=/(?:^|[^A-Za-z])(PLA|PETG|ABS|ASA|TPU|HIPS|NYLON)(?![A-Za-z])/i.exec(m);
   if(f) return f[1].toUpperCase();
   return m.split(/\s+/)[0] || 'Outros';
 }
@@ -5019,8 +5111,12 @@ function renderMiniChart(){
     const d=_dataFinalizacao(t);
     if(!d||d<ini||d>=fim) return;
     pecas[(d.getDay()+6)%7]+=Math.max(1,parseInt(t.qtd)||1);
-    const fam=_familiaMaterial(t.material);
-    gramas[fam]=(gramas[fam]||0)+(parseFloat(t.weight)||0);
+    const lista=(t.materiais&&t.materiais.length)?t.materiais:[{estoqueId:null,nome:t.material,peso:t.weight}];
+    lista.forEach(m=>{
+      const e=m.estoqueId!=null?estoque.find(x=>x.id===m.estoqueId):null;
+      const fam=_familiaMaterial(m.nome,e&&e.tipo);
+      gramas[fam]=(gramas[fam]||0)+(parseFloat(m.peso)||0);
+    });
   });
   const total=pecas.reduce((a,b)=>a+b,0);
   const max=Math.max(...pecas,1);
