@@ -132,6 +132,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .mm-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:2px;}
 .mm-total{font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;}
 .mm-total b{color:var(--accent);}
+.cut-sec{display:flex;flex-direction:column;gap:12px;}
 .cut-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
 .cut-layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:16px;align-items:start;}
 .cut-viewport{position:relative;height:calc(100vh - 170px);min-height:440px;background:radial-gradient(ellipse at 50% 35%,#13233a 0%,#0a121d 70%);}
@@ -2245,7 +2246,7 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
         <canvas id="cut-canvas"></canvas>
         <div class="cut-empty" id="cut-empty"><div style="font-size:42px">📦</div>Importe um arquivo STL ou OBJ para começar</div>
         <button class="btn btn-ghost cut-fit" onclick="VCut.fit()" title="Enquadrar modelo">⤢</button>
-        <div class="cut-hint">Arraste: girar · Shift ou botão direito: mover · Roda ou pinça: zoom</div>
+        <div class="cut-hint" id="cut-hint">Arraste: girar · Shift ou botão direito: mover · Roda ou pinça: zoom</div>
       </div>
       <div class="cut-panel">
         <div class="card">
@@ -2260,42 +2261,98 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><div class="card-title">✂️ Plano de corte</div></div>
+          <div class="card-header"><div class="card-title">✂️ Tipo de corte</div></div>
           <div class="card-body">
-            <div class="cut-axes">
-              <button class="btn btn-ghost" id="cut-ax-x" onclick="VCut.setAxis('x')">Eixo X</button>
-              <button class="btn btn-ghost" id="cut-ax-y" onclick="VCut.setAxis('y')">Eixo Y</button>
-              <button class="btn btn-primary" id="cut-ax-z" onclick="VCut.setAxis('z')">Eixo Z</button>
+            <div class="cut-axes" style="grid-template-columns:1fr 1fr">
+              <button class="btn btn-primary" id="cut-m-plano" onclick="VCut.setMode('plano')">Plano</button>
+              <button class="btn btn-ghost" id="cut-m-livre" onclick="VCut.setMode('livre')">Livre (pontos)</button>
             </div>
-            <label class="form-label" style="margin-top:12px">Posição do corte (mm)</label>
-            <div class="cut-row" style="grid-template-columns:1fr 90px">
-              <input type="range" id="cut-pos" min="0" max="1000" value="500" oninput="VCut.onPos(this.value)">
-              <input type="number" class="form-input" id="cut-pos-mm" step="0.1" onchange="VCut.onPosMM(this.value)">
-            </div>
-            <label class="form-label" style="margin-top:12px">Inclinação A <span id="cut-tiltA-v" class="cut-val">0°</span></label>
-            <input type="range" id="cut-tiltA" min="-45" max="45" step="1" value="0" oninput="VCut.onTilt('A',this.value)">
-            <label class="form-label" style="margin-top:8px">Inclinação B <span id="cut-tiltB-v" class="cut-val">0°</span></label>
-            <input type="range" id="cut-tiltB" min="-45" max="45" step="1" value="0" oninput="VCut.onTilt('B',this.value)">
-            <button class="btn btn-ghost" style="margin-top:10px" onclick="VCut.resetPlane()">↺ Centralizar plano</button>
-            <div class="cut-muted" style="margin-top:8px">Azul e laranja mostram as duas partes que vão sair do corte.</div>
+            <div class="cut-muted" id="cut-mode-hint" style="margin-top:8px">Corta com um plano reto. Reduza a área para cortar só uma parte (um braço, por exemplo).</div>
           </div>
         </div>
+
+        <div id="cut-sec-plano" class="cut-sec">
+          <div class="card">
+            <div class="card-header"><div class="card-title">📍 Posição do plano</div></div>
+            <div class="card-body">
+              <div class="cut-axes">
+                <button class="btn btn-ghost" id="cut-ax-x" onclick="VCut.setAxis('x')">Eixo X</button>
+                <button class="btn btn-ghost" id="cut-ax-y" onclick="VCut.setAxis('y')">Eixo Y</button>
+                <button class="btn btn-primary" id="cut-ax-z" onclick="VCut.setAxis('z')">Eixo Z</button>
+              </div>
+              <label class="form-label" style="margin-top:12px">Posição do corte (mm)</label>
+              <div class="cut-row" style="grid-template-columns:1fr 90px">
+                <input type="range" id="cut-pos" min="0" max="1000" value="500" oninput="VCut.onPos(this.value)">
+                <input type="number" class="form-input" id="cut-pos-mm" step="0.1" onchange="VCut.onPosMM(this.value)">
+              </div>
+              <label class="form-label" style="margin-top:12px">Inclinação A <span id="cut-tiltA-v" class="cut-val">0°</span></label>
+              <input type="range" id="cut-tiltA" min="-45" max="45" step="1" value="0" oninput="VCut.onTilt('A',this.value)">
+              <label class="form-label" style="margin-top:8px">Inclinação B <span id="cut-tiltB-v" class="cut-val">0°</span></label>
+              <input type="range" id="cut-tiltB" min="-45" max="45" step="1" value="0" oninput="VCut.onTilt('B',this.value)">
+              <button class="btn btn-ghost" style="margin-top:10px" onclick="VCut.resetPlane()">↺ Centralizar plano</button>
+              <div class="cut-muted" style="margin-top:8px">Azul e laranja mostram as duas partes que vão sair do corte.</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">📏 Área de corte</div></div>
+            <div class="card-body">
+              <label class="form-label">Largura <span id="cut-aw-v" class="cut-val"></span></label>
+              <input type="range" id="cut-aw" min="5" max="200" step="1" value="100" oninput="VCut.onArea('W',this.value)">
+              <label class="form-label" style="margin-top:8px">Altura <span id="cut-ah-v" class="cut-val"></span></label>
+              <input type="range" id="cut-ah" min="5" max="200" step="1" value="100" oninput="VCut.onArea('H',this.value)">
+              <label class="form-label" style="margin-top:8px">Deslocar ↔ <span id="cut-ou-v" class="cut-val"></span></label>
+              <input type="range" id="cut-ou" min="-100" max="100" step="0.5" value="0" oninput="VCut.onArea('U',this.value)">
+              <label class="form-label" style="margin-top:8px">Deslocar ↕ <span id="cut-ov-v" class="cut-val"></span></label>
+              <input type="range" id="cut-ov" min="-100" max="100" step="0.5" value="0" oninput="VCut.onArea('V',this.value)">
+              <label class="nfc-toggle" style="margin-top:10px"><input type="checkbox" id="cut-dragarea" onchange="VCut.setDragArea(this.checked)"> 🖐 Mover a área arrastando no modelo</label>
+              <button class="btn btn-ghost" style="margin-top:10px" onclick="VCut.areaFit()">↔ Cobrir o modelo inteiro</button>
+              <div class="cut-muted" style="margin-top:8px">Só as seções que ficam <b>inteiras</b> dentro do quadrado são cortadas. Para separar um braço, posicione o plano no braço e reduza a área até envolver só ele.</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="cut-sec-livre" class="cut-sec" style="display:none">
+          <div class="card">
+            <div class="card-header"><div class="card-title">🎯 Pontos do contorno</div></div>
+            <div class="card-body">
+              <div class="cut-muted">Toque ou clique no modelo para marcar pontos em volta da região a separar (mínimo 3). Arraste um ponto para ajustar a posição; o contorno segue as curvas da superfície.</div>
+              <div class="cut-val" id="cut-pt-count" style="margin:10px 0 8px;font-size:13px">0 ponto(s) — marque pelo menos 3</div>
+              <div class="cut-row" style="grid-template-columns:1fr 1fr 1fr">
+                <button class="btn btn-ghost" style="justify-content:center;padding:8px 4px;font-size:12px" onclick="VCut.ptUndo()">↩️ Último</button>
+                <button class="btn btn-ghost" style="justify-content:center;padding:8px 4px;font-size:12px" onclick="VCut.ptDelete()">🗑️ Selecionado</button>
+                <button class="btn btn-ghost" style="justify-content:center;padding:8px 4px;font-size:12px" onclick="VCut.ptClear()">Limpar</button>
+              </div>
+              <div class="cut-muted" style="margin-top:8px">Ponto laranja = selecionado. Linha vermelha = trecho sem caminho (adicione um ponto no meio).</div>
+            </div>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-header"><div class="card-title">🔩 Encaixes</div></div>
           <div class="card-body">
-            <select class="form-input" id="cut-tipo" style="width:100%" onchange="VCut.savePrefs()">
-              <option value="dowel">Pino solto (dowel)</option>
-              <option value="plug">Macho e fêmea (pino preso)</option>
-              <option value="nenhum">Sem encaixe</option>
-            </select>
+            <div class="cut-row">
+              <div><label class="form-label">Tipo</label>
+                <select class="form-input" id="cut-tipo" onchange="VCut.savePrefs()">
+                  <option value="dowel">Pino solto</option>
+                  <option value="plug">Macho e fêmea</option>
+                  <option value="nenhum">Sem encaixe</option>
+                </select></div>
+              <div><label class="form-label">Formato</label>
+                <select class="form-input" id="cut-forma" onchange="VCut.savePrefs()">
+                  <option value="redondo">Redondo</option>
+                  <option value="quadrado">Quadrado</option>
+                  <option value="dovetail">Rabo de andorinha</option>
+                </select></div>
+            </div>
             <div class="cut-muted" id="cut-tipo-hint" style="margin:8px 0 10px"></div>
             <div class="cut-row">
-              <div><label class="form-label">Diâmetro (mm)</label><input type="number" class="form-input" id="cut-diam" value="5" step="0.5" min="2" onchange="VCut.savePrefs()"></div>
+              <div><label class="form-label">Diâmetro / largura (mm)</label><input type="number" class="form-input" id="cut-diam" value="5" step="0.5" min="2" onchange="VCut.savePrefs()"></div>
               <div><label class="form-label">Profundidade (mm)</label><input type="number" class="form-input" id="cut-prof" value="10" step="1" min="3" onchange="VCut.savePrefs()"></div>
               <div><label class="form-label">Folga por lado (mm)</label><input type="number" class="form-input" id="cut-folga" value="0.15" step="0.05" min="0" max="1" onchange="VCut.savePrefs()"></div>
               <div><label class="form-label">Pinos por seção</label><input type="number" class="form-input" id="cut-qtd" value="1" step="1" min="1" max="4" onchange="VCut.savePrefs()"></div>
+              <div><label class="form-label">Girar encaixe (°)</label><input type="number" class="form-input" id="cut-rot" value="0" step="5" min="-180" max="180" onchange="VCut.savePrefs()"></div>
             </div>
-            <div class="cut-muted" style="margin-top:8px">Os pinos são posicionados sozinhos no ponto mais largo da seção e a profundidade é limitada para não furar a parede da peça.</div>
+            <div class="cut-muted" style="margin-top:8px">Os encaixes são posicionados sozinhos no ponto mais largo da seção e a profundidade é limitada para não furar a parede da peça.</div>
           </div>
         </div>
         <button class="btn btn-orange" id="cut-btn" onclick="VCut.cut()" style="width:100%;justify-content:center;min-height:48px;font-size:15px" disabled>✂️ Cortar peça ativa</button>
@@ -2759,12 +2816,18 @@ function meshStats(s){
 
 // ---------- fatiar a malha por um plano n·p = d ----------
 // lado "pos": n·p - d >= 0 ; lado "neg": < 0. Também devolve os segmentos de corte.
-function sliceSoup(src,n,d){
+// opt.tag: registra o triângulo de cada segmento (segTri).
+// opt.split (Set de índices): só esses triângulos são divididos; os demais vão inteiros para "whole".
+function sliceSoup(src,n,d,opt){
+  opt=opt||{};
+  const split=opt.split||null, tag=!!opt.tag||!!split, segsOnly=!!opt.segsOnly;
   const nx=n[0],ny=n[1],nz=n[2], T=src.length/9;
-  const P={a:new Float32Array(src.length*2),i:0}, N={a:new Float32Array(src.length*2),i:0};
-  const segs=[];
+  const P={a:new Float32Array(segsOnly?18:split?split.size*18+18:src.length*2),i:0}, N={a:new Float32Array(segsOnly?18:split?split.size*18+18:src.length*2),i:0};
+  const Wh=split?{a:new Float32Array(src.length),i:0}:null;
+  const segs=[], segTri=[];
   const qeq=(ax,ay,az,bx,by,bz)=>Math.round(ax*1e4)===Math.round(bx*1e4)&&Math.round(ay*1e4)===Math.round(by*1e4)&&Math.round(az*1e4)===Math.round(bz*1e4);
   function put(o,ax,ay,az,bx,by,bz,cx,cy,cz){
+    if(segsOnly) return;
     if(qeq(ax,ay,az,bx,by,bz)||qeq(bx,by,bz,cx,cy,cz)||qeq(ax,ay,az,cx,cy,cz)) return; // triângulo degenerado (vértices que se fundem na solda)
     const a=o.a,i=o.i;
     a[i]=ax;a[i+1]=ay;a[i+2]=az;a[i+3]=bx;a[i+4]=by;a[i+5]=bz;a[i+6]=cx;a[i+7]=cy;a[i+8]=cz;
@@ -2781,12 +2844,15 @@ function sliceSoup(src,n,d){
   for(let t=0;t<T;t++){
     const o=t*9;
     for(let k=0;k<9;k++) V[k]=src[o+k];
-    for(let k=0;k<3;k++) S[k]=nx*V[k*3]+ny*V[k*3+1]+nz*V[k*3+2]-d;
+    for(let k=0;k<3;k++){ const sv=nx*V[k*3]+ny*V[k*3+1]+nz*V[k*3+2]-d; S[k]=Math.abs(sv)<5e-5?0:sv; } // vértice a menos de 5e-5 mm do plano conta como "no plano"
     const p0=S[0]>=0,p1=S[1]>=0,p2=S[2]>=0;
     const cnt=(p0?1:0)+(p1?1:0)+(p2?1:0);
-    if(cnt===3){ put(P,V[0],V[1],V[2],V[3],V[4],V[5],V[6],V[7],V[8]); continue; }
-    if(cnt===0){ put(N,V[0],V[1],V[2],V[3],V[4],V[5],V[6],V[7],V[8]); continue; }
-    // vértice isolado L, depois M e N preservando o sentido do triângulo
+    if(cnt===3||cnt===0){
+      if(split) put(Wh,V[0],V[1],V[2],V[3],V[4],V[5],V[6],V[7],V[8]);
+      else put(cnt===3?P:N,V[0],V[1],V[2],V[3],V[4],V[5],V[6],V[7],V[8]);
+      continue;
+    }
+    if(split&&!split.has(t)){ put(Wh,V[0],V[1],V[2],V[3],V[4],V[5],V[6],V[7],V[8]); continue; }
     let l; const sg=[p0,p1,p2];
     if(cnt===1) l=sg[0]?0:sg[1]?1:2; else l=!sg[0]?0:!sg[1]?1:2;
     const m=(l+1)%3, q=(l+2)%3;
@@ -2797,9 +2863,9 @@ function sliceSoup(src,n,d){
     put(loneO,Lx,Ly,Lz,a[0],a[1],a[2],b[0],b[1],b[2]);
     put(otherO,a[0],a[1],a[2],Mx,My,Mz,Qx,Qy,Qz);
     put(otherO,a[0],a[1],a[2],Qx,Qy,Qz,b[0],b[1],b[2]);
-    if(!qeq(a[0],a[1],a[2],b[0],b[1],b[2])) segs.push(a[0],a[1],a[2],b[0],b[1],b[2]);
+    if(!qeq(a[0],a[1],a[2],b[0],b[1],b[2])){ segs.push(a[0],a[1],a[2],b[0],b[1],b[2]); if(tag) segTri.push(t); }
   }
-  return {pos:P.a.slice(0,P.i),neg:N.a.slice(0,N.i),segs};
+  return {pos:P.a.slice(0,P.i),neg:N.a.slice(0,N.i),whole:Wh?Wh.a.slice(0,Wh.i):null,segs,segTri};
 }
 
 // ---------- geometria 2D ----------
@@ -2849,7 +2915,25 @@ function findBridge(poly,hole,others,e){
     const H=hole[hIdx[hi]];
     const order=poly.map((_,i)=>i).sort((i,j)=>((poly[i].x-H.x)**2+(poly[i].y-H.y)**2)-((poly[j].x-H.x)**2+(poly[j].y-H.y)**2));
     const lim=hi<12?order.length:Math.min(order.length,40);
-    for(let k=0;k<lim;k++){ if(validBridge(poly[order[k]],H,poly,hole,others,e)) return {i:order[k],j:hIdx[hi]}; }
+    for(let k=0;k<lim;k++){ if(poly[order[k]]._br) continue; if(validBridge(poly[order[k]],H,poly,hole,others,e)) return {i:order[k],j:hIdx[hi]}; } // não reutiliza vértice já usado como âncora de ponte
+  }
+  return null;
+}
+// Quando o ear clipping trava: divide o anel restante por uma diagonal válida e triangula cada metade.
+// Devolve null se não achou diagonal; senão true/false (ok das duas metades).
+function splitRing(rest,epsA,tris){
+  const n=rest.length;
+  for(let i=0;i<n;i++) for(let j=i+2;j<n;j++){
+    if(i===0&&j===n-1) continue;
+    const A=rest[i],B=rest[j]; if(same(A,B)) continue;
+    let bad=false;
+    for(let k=0;k<n;k++){ if(segInter(A,B,rest[k],rest[(k+1)%n],epsA)){ bad=true; break; } }
+    if(bad) continue;
+    if(!pointInRing(rest,(A.x+B.x)/2,(A.y+B.y)/2)) continue;
+    const r1=earClip(rest.slice(i,j+1),epsA), r2=earClip(rest.slice(j).concat(rest.slice(0,i+1)),epsA);
+    for(const t of r1.tris) tris.push(t);
+    for(const t of r2.tris) tris.push(t);
+    return r1.ok&&r2.ok;
   }
   return null;
 }
@@ -2858,7 +2942,7 @@ function earClip(poly,epsA){
   const prev=new Int32Array(n),next=new Int32Array(n),rem=new Uint8Array(n);
   for(let i=0;i<n;i++){prev[i]=(i+n-1)%n;next[i]=(i+1)%n;}
   const cr=(a,b,c)=>(poly[b].x-poly[a].x)*(poly[c].y-poly[b].y)-(poly[b].y-poly[a].y)*(poly[c].x-poly[b].x);
-  const reflex=[]; for(let i=0;i<n;i++) if(cr(prev[i],i,next[i])<-epsA) reflex.push(i);
+  const reflex=[]; for(let i=0;i<n;i++) if(cr(prev[i],i,next[i])<=epsA) reflex.push(i);
   const removeV=v=>{next[prev[v]]=next[v];prev[next[v]]=prev[v];rem[v]=1;};
   // vértices colineares removidos ficam guardados na aresta (a->c) para subdividir o triângulo depois
   // (evita "emendas" abertas contra a malha lateral)
@@ -2888,12 +2972,19 @@ function earClip(poly,epsA){
       for(const r of reflex){
         if(rem[r]||r===a||r===v||r===c) continue;
         const Q=poly[r];
-        if(same(Q,A)||same(Q,B)||same(Q,C)) continue;
+        if(Q.x===A.x&&Q.y===A.y) continue;            // coincide com o primeiro canto
+        if(cr(prev[r],r,next[r])>epsA) continue;      // já é convexo: não bloqueia
         if(inTri(Q,A,B,C)){ ear=false; break; }
       }
     }
     if(ear){ emit(a,v,c); removeV(v); count--; v=c; stall=0; continue; }
     v=next[v]; stall++;
+    if(stall>count){
+      const rest=[]; let w=v;
+      for(let k=0;k<count;k++){ rest.push(poly[w]); const ch=chain.get(ck(w,next[w])); if(ch) for(const q of ch) rest.push(q); w=next[w]; }
+      const sp=splitRing(rest,epsA,tris);
+      if(sp!==null){ ok=ok&&sp; count=0; break; }
+    }
     if(stall>count){ // sem orelhas: força o vértice mais convexo para não travar
       let best=-1,bc=0,w=v;
       for(let k=0;k<count;k++){ const q=cr(prev[w],w,next[w]); if(q>bc){bc=q;best=w;} w=next[w]; }
@@ -2917,13 +3008,16 @@ function triangulateRegion(outer,holes){
     const hole=Hs[k], others=Hs.slice(k+1);
     const br=findBridge(poly,hole,others,e);
     if(!br){ bridged=false; continue; }
+    poly[br.i]._br=true; hole[br.j]._br=true;
     const rot=hole.slice(br.j).concat(hole.slice(0,br.j));
     poly=poly.slice(0,br.i+1).concat(rot,[rot[0]],[poly[br.i]],poly.slice(br.i+1));
   }
   const res=earClip(poly,e);
   let total=area2(O); for(const h of Hs) total+=area2(h); // furos têm área negativa
   let sum=0; for(const t of res.tris) sum+=Math.abs(area2(t));
-  return {tris:res.tris,ok:res.ok&&bridged&&Math.abs(sum-Math.abs(total))<=Math.abs(total)*0.01+1e-6};
+  const areaOk=Math.abs(sum-Math.abs(total))<=Math.abs(total)*0.01+1e-6;
+  const okAll=res.ok&&bridged&&areaOk;
+  return {tris:res.tris,ok:okAll};
 }
 
 // ---------- seção de corte -> regiões (contorno externo + furos) ----------
@@ -2934,7 +3028,7 @@ function planeBasis(n){
   const v=[n[1]*u[2]-n[2]*u[1],n[2]*u[0]-n[0]*u[2],n[0]*u[1]-n[1]*u[0]];
   return {u,v};
 }
-function buildRegions(segs,n,d){
+function buildRegions(segs,n,d,keep){
   const m=segs.length/6, {u,v}=planeBasis(n), p0=[n[0]*d,n[1]*d,n[2]*d];
   const W=new Welder(m*2+16), pts=[], ends=new Int32Array(m*2), adj=new Map();
   for(let k=0;k<m;k++) for(let e=0;e<2;e++){
@@ -2949,23 +3043,24 @@ function buildRegions(segs,n,d){
     used[s0]=1;
     const start=ends[s0*2]; let cur=ends[s0*2+1];
     if(start===cur) continue;
-    const ring=[start,cur]; let closed=false;
+    const ring=[start,cur], segIds=[s0]; let closed=false;
     for(;;){
       if(cur===start){ closed=true; ring.pop(); break; }
       let sid=-1; for(const q of adj.get(cur)){ if(!used[q]){ sid=q; break; } }
       if(sid<0) break;
-      used[sid]=1;
+      used[sid]=1; segIds.push(sid);
       const a=ends[sid*2],b=ends[sid*2+1]; cur=(a===cur)?b:a; ring.push(cur);
     }
-    if(closed&&ring.length>=3) loops.push(ring); else open++;
+    if(closed&&ring.length>=3) loops.push({ring,segIds}); else open++;
   }
-  const L=loops.map(r=>{
-    const vs=r.map(id=>{
+  const L0=loops.map(l=>{
+    const vs=l.ring.map(id=>{
       const P=pts[id], dx=P[0]-p0[0],dy=P[1]-p0[1],dz=P[2]-p0[2];
       return {x:dx*u[0]+dy*u[1]+dz*u[2], y:dx*v[0]+dy*v[1]+dz*v[2], P};
     });
-    return {vs,abs:Math.abs(area2(vs)),depth:0,parent:-1};
+    return {vs,abs:Math.abs(area2(vs)),depth:0,parent:-1,segIds:l.segIds};
   }).filter(l=>l.abs>1e-9);
+  const L=L0;
   for(let i=0;i<L.length;i++){
     const a=L[i].vs[0],b=L[i].vs[1], mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
     for(let j=0;j<L.length;j++){
@@ -2973,10 +3068,46 @@ function buildRegions(segs,n,d){
       if(pointInRing(L[j].vs,mx,my)){ L[i].depth++; if(L[i].parent<0||L[j].abs<L[L[i].parent].abs) L[i].parent=j; }
     }
   }
-  const regions=[], map=new Map();
-  L.forEach((l,i)=>{ if(l.depth%2===0){ const r={outer:l.vs,holes:[]}; regions.push(r); map.set(i,r); } });
-  L.forEach((l,i)=>{ if(l.depth%2===1&&map.has(l.parent)) map.get(l.parent).holes.push(l.vs); });
-  return {regions,open,u,v,p0};
+  // um furo (cavidade) só é cortado junto com o contorno que o envolve; ilhas só dentro de furos cortados
+  const kept=new Array(L.length).fill(false);
+  L.map((_,i)=>i).sort((a,b)=>L[a].depth-L[b].depth).forEach(i=>{
+    const l=L[i];
+    if(l.depth%2===1) kept[i]=l.parent>=0&&kept[l.parent];
+    else kept[i]=(!keep||keep(l.vs))&&(l.parent<0||kept[l.parent]);
+  });
+  const regions=[], map=new Map(), keptSegs=[]; let nKept=0;
+  L.forEach((l,i)=>{ if(!kept[i]) return; nKept++; for(const sidx of l.segIds) keptSegs.push(sidx); if(l.depth%2===0){ const r={outer:l.vs,holes:[]}; regions.push(r); map.set(i,r); } });
+  L.forEach((l,i)=>{ if(kept[i]&&l.depth%2===1&&map.has(l.parent)) map.get(l.parent).holes.push(l.vs); });
+  return {regions,open,u,v,p0,keptSegs,totalLoops:L0.length,keptLoops:nKept};
+}
+
+// ---------- componentes conexos (por arestas), com arestas-barreira ----------
+// s: soup; barrierSegs: segmentos (6 floats) que NÃO ligam os dois lados.
+function labelComponents(s,barrierSegs){
+  const nT=s.length/9, W=new Welder(nT*3+(barrierSegs.length/3)+16), ids=new Int32Array(nT*3);
+  for(let i=0;i<nT*3;i++) ids[i]=W.id(s[i*3],s[i*3+1],s[i*3+2]);
+  const bar=new Set();
+  for(let k=0;k<barrierSegs.length;k+=6){
+    const a=W.id(barrierSegs[k],barrierSegs[k+1],barrierSegs[k+2]), b=W.id(barrierSegs[k+3],barrierSegs[k+4],barrierSegs[k+5]);
+    bar.add(Math.min(a,b)*4194304+Math.max(a,b));
+  }
+  const par=new Int32Array(nT); for(let i=0;i<nT;i++) par[i]=i;
+  const find=x=>{ while(par[x]!==x){ par[x]=par[par[x]]; x=par[x]; } return x; };
+  let cap=16; while(cap<nT*6+16) cap<<=1; const mask=cap-1;
+  const ea=new Int32Array(cap).fill(-1), eb=new Int32Array(cap), t1=new Int32Array(cap), t2=new Int32Array(cap).fill(-1);
+  const slot=(lo,hi)=>{ let h=((Math.imul(lo,73856093)^Math.imul(hi,19349663))>>>0)&mask; while(ea[h]!==-1&&!(ea[h]===lo&&eb[h]===hi)) h=(h+1)&mask; return h; };
+  for(let t=0;t<nT;t++) for(let k=0;k<3;k++){
+    const a=ids[t*3+k], b=ids[t*3+(k+1)%3]; if(a===b) continue;
+    const lo=a<b?a:b, hi=a<b?b:a, h=slot(lo,hi);
+    if(ea[h]===-1){ ea[h]=lo; eb[h]=hi; t1[h]=t; }
+    else {
+      if(t2[h]<0) t2[h]=t;
+      if(!bar.has(lo*4194304+hi)){ const ra=find(t1[h]), rb=find(t); if(ra!==rb) par[ra]=rb; }
+    }
+  }
+  const comp=new Int32Array(nT); for(let t=0;t<nT;t++) comp[t]=find(t);
+  const edgeTris=(a,b)=>{ const lo=a<b?a:b, hi=a<b?b:a, h=slot(lo,hi); return ea[h]===-1?[]:(t2[h]<0?[t1[h]]:[t1[h],t2[h]]); };
+  return {comp,ids,W,edgeTris};
 }
 
 // ---------- posicionamento automático dos pinos (maior círculo inscrito) ----------
@@ -3033,6 +3164,27 @@ function firstHits(src,rays){
   return best;
 }
 
+// ---------- formas dos encaixes ----------
+// contorno nominal do pino (centro em 0,0), em coordenadas do plano. r = meia largura.
+function shapePoly(forma,r,ang){
+  const c=Math.cos(ang), s2=Math.sin(ang), rot=p=>[p[0]*c-p[1]*s2,p[0]*s2+p[1]*c];
+  if(forma==='quadrado') return [[-r,-r],[r,-r],[r,r],[-r,r]].map(rot);
+  // rabo de andorinha: cauda trapezoidal (ponta larga = 2r, pescoço = 55% disso)
+  const hl=r*1.2, wn=r*0.55;
+  return [[-hl,-wn],[hl,-r],[hl,r],[-hl,wn]].map(rot);
+}
+function offsetConvex(poly,dl){ // poligono convexo CCW expandido em dl (quinas em esquadro)
+  const n=poly.length, out=[];
+  for(let i=0;i<n;i++){
+    const p0=poly[(i+n-1)%n], p1=poly[i], p2=poly[(i+1)%n];
+    const e1=[p1[0]-p0[0],p1[1]-p0[1]], e2=[p2[0]-p1[0],p2[1]-p1[1]], l1=Math.hypot(e1[0],e1[1]), l2=Math.hypot(e2[0],e2[1]);
+    const n1=[e1[1]/l1,-e1[0]/l1], n2=[e2[1]/l2,-e2[0]/l2], k=1+n1[0]*n2[0]+n1[1]*n2[1];
+    out.push([p1[0]+dl*(n1[0]+n2[0])/k,p1[1]+dl*(n1[1]+n2[1])/k]);
+  }
+  return out;
+}
+const circR=poly=>Math.max(...poly.map(p=>Math.hypot(p[0],p[1])));
+
 // ---------- construção de peças ----------
 class Out{ constructor(){ this.a=[]; } 
   tri(A,B,C,want){ // orienta o triângulo para que a normal aponte para "want"
@@ -3077,32 +3229,61 @@ function capSoup(out,region,holeRings,flip){
 }
 const ringVerts=(pts2,pts3)=>pts2.map((p,i)=>({x:p[0],y:p[1],P:pts3[i]}));
 
-// Corta uma malha pelo plano (n,d) com encaixes opcionais.
-// o: {tipo:'nenhum'|'dowel'|'plug', diam, prof, folga, qtd}
-function cutPiece(soup,n,d,o){
+// Corta uma malha pelo plano (n,d), opcionalmente limitado a uma área retangular no plano,
+// com encaixes opcionais.
+// o: {tipo:'nenhum'|'dowel'|'plug', forma:'redondo'|'quadrado'|'dovetail', diam, prof, folga, qtd, rot}
+// area: {c:[x,y,z] centro no plano, hw, hh} (meia largura/altura, nos eixos u,v do plano) ou null = plano inteiro
+function cutPiece(soup,n,d,o,area){
   const warn=[];
-  const sl=sliceSoup(soup,n,d);
-  if(!sl.pos.length||!sl.neg.length) return {error:'O plano de corte não atravessa o modelo.'};
-  const cap=buildRegions(sl.segs,n,d);
-  if(!cap.regions.length) return {error:'Não consegui fechar a seção de corte (malha aberta ou com falhas).'};
+  const sl0=sliceSoup(soup,n,d,{tag:!!area});
+  if(!sl0.pos.length||!sl0.neg.length) return {error:'O plano de corte não atravessa o modelo.'};
+  const {u,v}=planeBasis(n), p0=[n[0]*d,n[1]*d,n[2]*d];
+  let keep=null;
+  if(area){
+    const dx=area.c[0]-p0[0],dy=area.c[1]-p0[1],dz=area.c[2]-p0[2];
+    const cx=dx*u[0]+dy*u[1]+dz*u[2], cy=dx*v[0]+dy*v[1]+dz*v[2], e=1e-6;
+    keep=vs=>vs.every(p=>Math.abs(p.x-cx)<=area.hw+e&&Math.abs(p.y-cy)<=area.hh+e);
+  }
+  const cap=buildRegions(sl0.segs,n,d,keep);
+  if(!cap.regions.length) return {error:area?'A área de corte não cobre nenhuma seção completa do modelo. Aumente ou mova a área.':'Não consegui fechar a seção de corte (malha aberta ou com falhas).'};
   if(cap.open>0) warn.push(cap.open+' contorno(s) aberto(s) na seção: a malha original pode ter falhas.');
-  const {u,v,p0}=cap, N=36, MARGIN=1.2, WALL=1.2, MINPIN=1.5;
-  const pr0=o.diam/2, folga=o.folga;
-  const lift=(x,y,off)=>[p0[0]+u[0]*x+v[0]*y+(off?off[0]:0),p0[1]+u[1]*x+v[1]*y+(off?off[1]:0),p0[2]+u[2]*x+v[2]*y+(off?off[2]:0)];
-  const pins=[]; // {x,y,rp (raio do pino), pocket (raio da cavidade), region}
+  const bounded=!!area&&cap.keptLoops<cap.totalLoops;
+  if(bounded) warn.push('As outras seções do modelo (fora da área) ficaram intactas.');
+  const N=36, MARGIN=1.2, WALL=1.2, MINPIN=1.5;
+  const forma=o.forma||'redondo', pr0=o.diam/2, folga=o.folga;
+  const liftR=(x,y,off)=>[fr(p0[0]+u[0]*x+v[0]*y+(off?off[0]:0)),fr(p0[1]+u[1]*x+v[1]*y+(off?off[1]:0)),fr(p0[2]+u[2]*x+v[2]*y+(off?off[2]:0))];
+  // direção de referência do encaixe (Z do mundo projetado no plano; senão X)
+  let rx=0*u[0]+0*u[1]+1*u[2], ry=v[2];
+  if(Math.hypot(rx,ry)<0.3){ rx=u[0]; ry=v[0]; }
+  const ang=Math.atan2(ry,rx)+(o.rot||0)*Math.PI/180;
+  const pins=[]; // {x,y,key:[[x,y]], pocket:[[x,y]], ri, round}
   if(o.tipo!=='nenhum'&&o.qtd>0){
     cap.regions.forEach((reg,ri)=>{
-      const found=placePins(reg,o.qtd,pr0+folga,MARGIN,MINPIN,folga);
+      let pocketR, nominalPoly=null;
+      if(forma==='redondo') pocketR=pr0+folga;
+      else { nominalPoly=shapePoly(forma,pr0,ang); pocketR=circR(offsetConvex(nominalPoly,folga)); }
+      const found=placePins(reg,o.qtd,pocketR,MARGIN,MINPIN,folga);
       if(!found.length) warn.push('Seção '+(ri+1)+' pequena demais para pino.');
-      for(const f of found) pins.push({x:f.x,y:f.y,pocket:f.pr,rp:Math.max(MINPIN,f.pr-folga),ri});
+      for(const f of found){
+        if(forma==='redondo'){
+          const rp=Math.max(MINPIN,f.pr-folga), pk=[],kk=[];
+          for(let k=0;k<N;k++){ const a=2*Math.PI*k/N; pk.push([Math.cos(a)*f.pr,Math.sin(a)*f.pr]); kk.push([Math.cos(a)*rp,Math.sin(a)*rp]); }
+          pins.push({x:f.x,y:f.y,key:kk,pocket:pk,ri,width:rp*2});
+        } else {
+          const sc=Math.min(1,f.pr/pocketR);
+          if(pr0*sc<MINPIN) continue;
+          const key=shapePoly(forma,pr0*sc,ang);
+          pins.push({x:f.x,y:f.y,key,pocket:offsetConvex(key,folga),ri,width:pr0*sc*2});
+        }
+      }
     });
     // profundidade segura por raios ao longo do eixo do corte
     const rays=[];
     for(const p of pins){
-      const c=lift(p.x,p.y);
-      const sam=[c]; for(const q of circle(c,u,v,p.pocket,8,[0,0,0])) sam.push(q);
+      const sam=[[p.x,p.y]], step=Math.max(1,Math.floor(p.pocket.length/12));
+      for(let k=0;k<p.pocket.length;k+=step) sam.push([p.x+p.pocket[k][0],p.y+p.pocket[k][1]]);
       p.sam=sam.length;
-      for(const s of sam){ rays.push({o:s,d:[n[0],n[1],n[2]]}); rays.push({o:s,d:[-n[0],-n[1],-n[2]]}); }
+      for(const q of sam){ const c=liftR(q[0],q[1]); rays.push({o:c,d:[n[0],n[1],n[2]]}); rays.push({o:c,d:[-n[0],-n[1],-n[2]]}); }
     }
     if(rays.length){
       const hits=firstHits(soup,rays); let q=0;
@@ -3113,7 +3294,6 @@ function cutPiece(soup,n,d,o){
       }
     }
   }
-  // define profundidade final; descarta pinos sem espaço
   const good=[];
   for(const p of pins){
     const lim=o.tipo==='plug'?p.limNeg:Math.min(p.limPos,p.limNeg);
@@ -3121,48 +3301,93 @@ function cutPiece(soup,n,d,o){
     if(!(p.depth>=3)){ warn.push('Um pino foi descartado: pouca espessura para a profundidade (resta '+(isFinite(lim)?Math.max(0,lim).toFixed(1):'?')+' mm).'); continue; }
     good.push(p);
   }
-  const posOut=new Out(), negOut=new Out(), pinPieces=[];
+  // saídas por região (tampa + furos/pinos) para os lados pos (+n) e neg (-n)
+  const R=cap.regions.map(()=>({pos:new Out(),neg:new Out()})), pinPieces=[];
   let capOk=true;
+  const toV=(poly2,pts3)=>poly2.map((p,i)=>({x:p[0],y:p[1],P:pts3[i]}));
   for(let ri=0;ri<cap.regions.length;ri++){
-    const reg=cap.regions[ri], mine=good.filter(p=>p.ri===ri);
-    const holesA=[], holesB=[];
+    const reg=cap.regions[ri], mine=good.filter(p=>p.ri===ri), holesA=[], holesB=[];
     for(const p of mine){
-      const pk=circle(lift(p.x,p.y),u,v,p.pocket,N,[0,0,0]);      // cavidade (lado fêmea / ambos no dowel)
-      const pg=circle(lift(p.x,p.y),u,v,p.rp,N,[0,0,0]);          // base do pino macho
-      const c2k=[],c2g=[];
-      for(let k=0;k<N;k++){ const a=2*Math.PI*k/N; c2k.push([p.x+Math.cos(a)*p.pocket,p.y+Math.sin(a)*p.pocket]); c2g.push([p.x+Math.cos(a)*p.rp,p.y+Math.sin(a)*p.rp]); }
-      p.pk=pk; p.pg=pg;
-      holesB.push(ringVerts(c2k,pk));
-      holesA.push(o.tipo==='plug'?ringVerts(c2g,pg):ringVerts(c2k,pk));
+      p.pk3=p.pocket.map(q=>liftR(p.x+q[0],p.y+q[1]));
+      p.kk3=p.key.map(q=>liftR(p.x+q[0],p.y+q[1]));
+      const pk2=p.pocket.map(q=>[p.x+q[0],p.y+q[1]]), kk2=p.key.map(q=>[p.x+q[0],p.y+q[1]]);
+      holesB.push(toV(pk2,p.pk3));
+      holesA.push(o.tipo==='plug'?toV(kk2,p.kk3):toV(pk2,p.pk3));
     }
-    // A = lado +n (cap voltado para -n); B = lado -n (cap voltado para +n)
-    if(!capSoup(posOut,reg,holesA,true)) capOk=false;
-    if(!capSoup(negOut,reg,holesB,false)) capOk=false;
+    if(!capSoup(R[ri].pos,reg,holesA,true)) capOk=false;
+    if(!capSoup(R[ri].neg,reg,holesB,false)) capOk=false;
   }
   if(!capOk) warn.push('A face do corte teve triangulação imperfeita; confira antes de imprimir.');
   let np=0;
+  const sc=(vv,k)=>[vv[0]*k,vv[1]*k,vv[2]*k], nn=[n[0],n[1],n[2]], mm=[-n[0],-n[1],-n[2]];
+  const label=w=>(forma==='dovetail'?'Rabo de andorinha':forma==='quadrado'?'Pino quadrado':'Pino');
   for(const p of good){
     np++;
-    const c=lift(p.x,p.y), nn=[n[0],n[1],n[2]], mm=[-n[0],-n[1],-n[2]];
-    const sc=(vv,k)=>[vv[0]*k,vv[1]*k,vv[2]*k];
+    const out=R[p.ri];
     if(o.tipo==='dowel'){
-      addTube(posOut,p.pk,sc(nn,p.depth),true);          // cavidade em A (entra no lado +n)
-      addTube(negOut,p.pk,sc(mm,p.depth),true);          // cavidade em B (entra no lado -n)
+      addTube(out.pos,p.pk3,sc(nn,p.depth),true);
+      addTube(out.neg,p.pk3,sc(mm,p.depth),true);
       const len=Math.max(2,p.depth*2-1.0), half=len/2;
-      const r0=circle(c,u,v,p.rp,N,sc(mm,half)), off=sc(nn,len);
-      const dw=new Out(); addTube(dw,r0,off,false);
-      const c0=[fr(c[0]-n[0]*half),fr(c[1]-n[1]*half),fr(c[2]-n[2]*half)];
-      addDisc(dw,r0,c0,mm);
-      pinPieces.push({soup:dw.soup(),nome:'Pino '+np+' (Ø'+(p.rp*2).toFixed(1)+'×'+len.toFixed(0)+' mm)',axisN:nn,diam:p.rp*2,len});
-    } else { // plug: macho em A (sai para -n), fêmea em B (entra para -n)
-      const L=Math.max(2,p.depth-0.4);
-      addTube(posOut,p.pg,sc(mm,L),false);
-      addTube(negOut,p.pk,sc(mm,p.depth),true);
+      const r0=p.key.map(q=>liftR(p.x+q[0],p.y+q[1],sc(mm,half)));
+      const dw=new Out(); addTube(dw,r0,sc(nn,len),false);
+      const c0=[0,0,0]; for(const q of r0){c0[0]+=q[0]/r0.length;c0[1]+=q[1]/r0.length;c0[2]+=q[2]/r0.length;}
+      addDisc(dw,r0,[fr(c0[0]),fr(c0[1]),fr(c0[2])],mm);
+      pinPieces.push({soup:dw.soup(),nome:label()+' '+np+' ('+p.width.toFixed(1)+'×'+len.toFixed(0)+' mm)',axisN:nn,diam:p.width,len});
+    } else { // plug: macho em pos (sai para -n), fêmea em neg (entra para -n)
+      addTube(out.pos,p.kk3,sc(mm,Math.max(2,p.depth-0.4)),false);
+      addTube(out.neg,p.pk3,sc(mm,p.depth),true);
     }
   }
-  const A=concat(sl.pos,posOut.soup()), B=concat(sl.neg,negOut.soup());
-  return {a:A,b:B,pins:pinPieces,pinCount:good.length,warn,
-    baseA:(o.tipo==='plug'&&good.length)?null:[-n[0],-n[1],-n[2]], baseB:[n[0],n[1],n[2]], u,v};
+  const hasPeg=o.tipo==='plug'&&good.length>0;
+  if(!bounded){
+    const A=concat(sl0.pos,Float32Array.from(R.flatMap(r=>r.pos.a))), B=concat(sl0.neg,Float32Array.from(R.flatMap(r=>r.neg.a)));
+    const baseA=hasPeg?null:[-n[0],-n[1],-n[2]], baseB=[n[0],n[1],n[2]];
+    return {pieces:[{soup:A,base:baseA},{soup:B,base:baseB}],a:A,b:B,baseA,baseB,pins:pinPieces,pinCount:good.length,warn,u,v,bounded:false};
+  }
+  // ---- corte limitado: peças = componentes conexos separados pelo contorno cortado ----
+  const sl=sliceSoup(soup,n,d,{split:new Set(cap.keptSegs.map(i=>sl0.segTri[i]))});
+  const nW=sl.whole.length/9, nP=sl.pos.length/9;
+  const all=concat(concat(sl.whole,sl.pos),sl.neg);
+  const lab=labelComponents(all,sl.segs);
+  const sideOf=(t,ia,ib)=>{
+    if(t>=nW&&t<nW+nP) return 1; if(t>=nW+nP) return -1;
+    for(let k=0;k<3;k++){ const id=lab.ids[t*3+k]; if(id!==ia&&id!==ib){ const q=t*9+k*3; return (n[0]*all[q]+n[1]*all[q+1]+n[2]*all[q+2]-d)>=0?1:-1; } }
+    return 0;
+  };
+  const uf=new Map(), fnd=x=>{ let r=x; while((uf.get(r)||r)!==r) r=uf.get(r); return r; }, uni=(a,b)=>{ a=fnd(a); b=fnd(b); if(a!==b) uf.set(a,b); };
+  const sidesOf=ring=>{
+    const a=ring[0].P, b=ring[1].P, ia=lab.W.id(a[0],a[1],a[2]), ib=lab.W.id(b[0],b[1],b[2]);
+    let pc=null,nc=null;
+    for(const t of lab.edgeTris(ia,ib)){ const sd=sideOf(t,ia,ib); if(sd>0) pc=lab.comp[t]; else if(sd<0) nc=lab.comp[t]; }
+    return {pc,nc};
+  };
+  for(let ri=0;ri<cap.regions.length;ri++){
+    const reg=cap.regions[ri], so=sidesOf(reg.outer);
+    if(so.pc===null||so.nc===null) return {error:'Não consegui identificar os dois lados do corte nesta área. Tente deslocar a área um pouco.'};
+    for(const h of reg.holes){ const sh=sidesOf(h); if(sh.pc!==null) uni(so.pc,sh.pc); if(sh.nc!==null) uni(so.nc,sh.nc); }
+    reg.pc=so.pc; reg.nc=so.nc;
+  }
+  for(const reg of cap.regions){
+    reg.pc=fnd(reg.pc); reg.nc=fnd(reg.nc);
+    if(reg.pc===reg.nc) return {error:'Este corte não separa o modelo em partes (a área cobre só parte da seção, ou o modelo tem alça/furo passante). Aumente a área para cobrir a seção toda.'};
+  }
+  const idx=new Map(), counts=[];
+  const cOf=t=>fnd(lab.comp[t]);
+  for(let t=0;t<all.length/9;t++){ const c=cOf(t); if(!idx.has(c)){ idx.set(c,counts.length); counts.push(0); } counts[idx.get(c)]+=9; }
+  const extra=counts.map(()=>[]), base=counts.map(()=>undefined);
+  cap.regions.forEach((reg,ri)=>{
+    const ip=idx.get(reg.pc), in_=idx.get(reg.nc);
+    extra[ip].push(R[ri].pos.a); extra[in_].push(R[ri].neg.a);
+    const bp=hasPeg&&good.some(p=>p.ri===ri)?null:[-n[0],-n[1],-n[2]], bn=[n[0],n[1],n[2]];
+    base[ip]=(base[ip]===undefined)?bp:null; base[in_]=(base[in_]===undefined)?bn:null;
+  });
+  const soups=counts.map((c,i)=>{ let ex=0; for(const e of extra[i]) ex+=e.length; return new Float32Array(c+ex); });
+  const fillAt=counts.map(()=>0);
+  for(let t=0;t<all.length/9;t++){ const i=idx.get(cOf(t)); soups[i].set(all.subarray(t*9,t*9+9),fillAt[i]); fillAt[i]+=9; }
+  extra.forEach((list,i)=>{ for(const e of list){ soups[i].set(e,fillAt[i]); fillAt[i]+=e.length; } });
+  const pieces=soups.map((sp,i)=>({soup:sp,base:base[i]===undefined?null:base[i]}));
+  pieces.sort((a,b)=>b.soup.length-a.soup.length);
+  return {pieces,pins:pinPieces,pinCount:good.length,warn,u,v,bounded:true};
 }
 
 // ---------- importação / exportação ----------
@@ -3229,14 +3454,316 @@ function orientForPrint(s,base){
   return r;
 }
 
-return {Welder,boundsOf,concat,projRange,mapSoup,computeNormals,meshStats,sliceSoup,buildRegions,triangulateRegion,placePins,firstHits,cutPiece,parseSTL,parseOBJ,writeSTL,orientForPrint,planeBasis};
+// ---------- corte livre: caminho sobre a superfície a partir de pontos ----------
+const d3=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+function makePick(src,t,u,v){
+  const b1=0.02+u*0.94, b2=0.02+v*0.94, b0=1-b1-b2, q=t*9; // afasta das arestas: ponto bem dentro do triângulo
+  const p=[0,1,2].map(k=>fr(src[q+k]*b0+src[q+3+k]*b1+src[q+6+k]*b2));
+  const e1=[src[q+3]-src[q],src[q+4]-src[q+1],src[q+5]-src[q+2]], e2=[src[q+6]-src[q],src[q+7]-src[q+1],src[q+8]-src[q+2]];
+  const nx=e1[1]*e2[2]-e1[2]*e2[1],ny=e1[2]*e2[0]-e1[0]*e2[2],nz=e1[0]*e2[1]-e1[1]*e2[0], l=Math.hypot(nx,ny,nz)||1;
+  return {tri:t,p,n:[nx/l,ny/l,nz/l]};
+}
+// primeiro triângulo atingido por um raio (origem o, direção d)
+function pickSurface(src,o,d){
+  const T=src.length/9, dx=d[0],dy=d[1],dz=d[2]; let best=Infinity,bt=-1,bu=0,bv=0;
+  for(let t=0;t<T;t++){
+    const q=t*9, ax=src[q],ay=src[q+1],az=src[q+2];
+    const e1x=src[q+3]-ax,e1y=src[q+4]-ay,e1z=src[q+5]-az,e2x=src[q+6]-ax,e2y=src[q+7]-ay,e2z=src[q+8]-az;
+    const px=dy*e2z-dz*e2y,py=dz*e2x-dx*e2z,pz=dx*e2y-dy*e2x, det=e1x*px+e1y*py+e1z*pz;
+    if(Math.abs(det)<1e-14) continue;
+    const inv=1/det,tx=o[0]-ax,ty=o[1]-ay,tz=o[2]-az, u=(tx*px+ty*py+tz*pz)*inv; if(u<0||u>1) continue;
+    const qx=ty*e1z-tz*e1y,qy=tz*e1x-tx*e1z,qz=tx*e1y-ty*e1x, w=(dx*qx+dy*qy+dz*qz)*inv; if(w<0||u+w>1) continue;
+    const tt=(e2x*qx+e2y*qy+e2z*qz)*inv; if(tt>1e-6&&tt<best){ best=tt;bt=t;bu=u;bv=w; }
+  }
+  return bt<0?null:Object.assign(makePick(src,bt,bu,bv),{dist:best});
+}
+function distPS(P,a,b){
+  const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2], l2=dx*dx+dy*dy+dz*dz;
+  let t=l2>0?((P[0]-a[0])*dx+(P[1]-a[1])*dy+(P[2]-a[2])*dz)/l2:0; t=t<0?0:t>1?1:t;
+  return Math.hypot(P[0]-a[0]-t*dx,P[1]-a[1]-t*dy,P[2]-a[2]-t*dz);
+}
+// caminho sobre a superfície entre dois pontos: corta a malha por um plano que contém A, B e a normal média
+function surfacePath(src,A,B){
+  if(A.tri===B.tri) return {pts:[A.p,B.p],tris:[A.tri]};
+  const ab=[B.p[0]-A.p[0],B.p[1]-A.p[1],B.p[2]-A.p[2]], L=Math.hypot(ab[0],ab[1],ab[2]);
+  if(L<1e-6) return {error:'Dois pontos estão praticamente no mesmo lugar.'};
+  let nv=[A.n[0]+B.n[0],A.n[1]+B.n[1],A.n[2]+B.n[2]], nl=Math.hypot(nv[0],nv[1],nv[2]);
+  nv=nl<1e-6?A.n.slice():nv.map(x=>x/nl);
+  const cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  let pn=cr(ab,nv), pl=Math.hypot(pn[0],pn[1],pn[2]);
+  if(pl<1e-6*L){ pn=cr(ab,Math.abs(ab[0])<0.9*L?[1,0,0]:[0,1,0]); pl=Math.hypot(pn[0],pn[1],pn[2]); }
+  pn=pn.map(x=>x/pl); const d=pn[0]*A.p[0]+pn[1]*A.p[1]+pn[2]*A.p[2];
+  const m=0.6*L+2, lo=[0,1,2].map(k=>Math.min(A.p[k],B.p[k])-m), hi=[0,1,2].map(k=>Math.max(A.p[k],B.p[k])+m);
+  const cand=[], T=src.length/9;
+  for(let t=0;t<T;t++){
+    const q=t*9; let ok=true;
+    for(let k=0;k<3&&ok;k++){ const a=src[q+k],b=src[q+3+k],c=src[q+6+k]; if(Math.max(a,b,c)<lo[k]||Math.min(a,b,c)>hi[k]) ok=false; }
+    if(ok) cand.push(t);
+  }
+  const local=new Float32Array(cand.length*9); cand.forEach((t,i)=>local.set(src.subarray(t*9,t*9+9),i*9));
+  const sl=sliceSoup(local,pn,d,{tag:true,segsOnly:true}), nS=sl.segs.length/6;
+  if(!nS) return {error:'Não achei superfície entre dois pontos. Adicione um ponto intermediário.'};
+  const W=new Welder(nS*2+16), pos=[], adj=[], ends=new Int32Array(nS*2);
+  for(let k=0;k<nS;k++) for(let e=0;e<2;e++){
+    const x=sl.segs[k*6+e*3],y=sl.segs[k*6+e*3+1],z=sl.segs[k*6+e*3+2], id=W.id(x,y,z);
+    if(id===pos.length){ pos.push([x,y,z]); adj.push([]); }
+    ends[k*2+e]=id;
+  }
+  for(let k=0;k<nS;k++){ adj[ends[k*2]].push(k); adj[ends[k*2+1]].push(k); }
+  const glob=k=>cand[sl.segTri[k]];
+  const segLen=k=>d3(pos[ends[k*2]],pos[ends[k*2+1]]);
+  const pickSeg=(P,tri)=>{ let best=-1,bd=Infinity; for(let k=0;k<nS;k++){ let dd=distPS(P,pos[ends[k*2]],pos[ends[k*2+1]]); if(glob(k)===tri) dd-=1e-3; if(dd<bd){bd=dd;best=k;} } return best; };
+  const sA=pickSeg(A.p,A.tri), sB=pickSeg(B.p,B.tri);
+  if(sA===sB) return {pts:[A.p,B.p],tris:[glob(sA)]};
+  const n=pos.length, dist=new Float64Array(n).fill(Infinity), prev=new Int32Array(n).fill(-1), pseg=new Int32Array(n).fill(-1);
+  const heap=[]; // mini-heap [dist,node]
+  const hpush=(x)=>{ heap.push(x); let i=heap.length-1; while(i>0){ const p=(i-1)>>1; if(heap[p][0]<=heap[i][0]) break; [heap[p],heap[i]]=[heap[i],heap[p]]; i=p; } };
+  const hpop=()=>{ const top=heap[0], last=heap.pop(); if(heap.length){ heap[0]=last; let i=0; for(;;){ let l=2*i+1,r=l+1,m2=i; if(l<heap.length&&heap[l][0]<heap[m2][0]) m2=l; if(r<heap.length&&heap[r][0]<heap[m2][0]) m2=r; if(m2===i) break; [heap[m2],heap[i]]=[heap[i],heap[m2]]; i=m2; } } return top; };
+  for(let e=0;e<2;e++){ const id=ends[sA*2+e], dd=d3(A.p,pos[id]); if(dd<dist[id]){ dist[id]=dd; hpush([dd,id]); } }
+  while(heap.length){
+    const [du,u]=hpop(); if(du>dist[u]) continue;
+    for(const k of adj[u]){
+      if(k===sA||k===sB) continue;
+      const o=ends[k*2]===u?ends[k*2+1]:ends[k*2], nd=du+segLen(k);
+      if(nd<dist[o]){ dist[o]=nd; prev[o]=u; pseg[o]=k; hpush([nd,o]); }
+    }
+  }
+  let bt=Infinity,bi=-1;
+  for(let e=0;e<2;e++){ const id=ends[sB*2+e]; if(dist[id]<Infinity){ const t=dist[id]+d3(pos[id],B.p); if(t<bt){bt=t;bi=id;} } }
+  if(bi<0) return {error:'Não achei caminho na superfície entre dois pontos. Adicione um ponto intermediário.'};
+  const nodes=[], segsUsed=[]; for(let c=bi;c!==-1;c=prev[c]){ nodes.push(c); segsUsed.push(pseg[c]); }
+  nodes.reverse(); segsUsed.reverse();
+  const pts=[A.p], tris=[glob(sA)];
+  nodes.forEach((id,i)=>{ pts.push(pos[id]); if(i>0) tris.push(glob(segsUsed[i])); });
+  pts.push(B.p); tris.push(glob(sB));
+  return {pts,tris};
+}
+// laço fechado sobre a superfície passando pelos pontos (picks)
+function buildLoop(src,picks){
+  const n=picks.length; if(n<3) return {error:'Marque pelo menos 3 pontos.'};
+  const pts=[], tris=[];
+  for(let i=0;i<n;i++){
+    const pa=surfacePath(src,picks[i],picks[(i+1)%n]); if(pa.error) return {error:pa.error};
+    for(let k=0;k<pa.pts.length-1;k++){ pts.push(pa.pts[k]); tris.push(pa.tris[k]); }
+  }
+  return {pts,tris};
+}
+// divide um triângulo ao longo da polilinha E1 -> interior... -> E2
+function splitTriangle(src,t,poly){
+  const q=t*9, V=[[src[q],src[q+1],src[q+2]],[src[q+3],src[q+4],src[q+5]],[src[q+6],src[q+7],src[q+8]]];
+  const elen=Math.max(d3(V[0],V[1]),d3(V[1],V[2]),d3(V[2],V[0])), tol=Math.max(2e-3,2e-4*elen);
+  const E1=poly[0], E2=poly[poly.length-1], inner=poly.slice(1,-1);
+  const loc=E=>{
+    for(let k=0;k<3;k++) if(d3(E,V[k])<tol) return {v:k};
+    let be=-1,bd=Infinity; for(let k=0;k<3;k++){ const dd=distPS(E,V[k],V[(k+1)%3]); if(dd<bd){bd=dd;be=k;} }
+    if(bd>tol*4) return null;
+    const a=V[be],b=V[(be+1)%3], dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2];
+    return {e:be,t:((E[0]-a[0])*dx+(E[1]-a[1])*dy+(E[2]-a[2])*dz)/(dx*dx+dy*dy+dz*dz)};
+  };
+  const l1=loc(E1), l2=loc(E2);
+  if(!l1||!l2) return null;
+  const ring=[]; const objs=V.map(P=>({P}));
+  const on=[[],[],[]]; const o1=l1.v!==undefined?objs[l1.v]:{P:E1}, o2=l2.v!==undefined?objs[l2.v]:{P:E2};
+  if(l1.v===undefined) on[l1.e].push({t:l1.t,o:o1}); if(l2.v===undefined) on[l2.e].push({t:l2.t,o:o2});
+  for(let k=0;k<3;k++){ ring.push(objs[k]); on[k].sort((a,b)=>a.t-b.t).forEach(x=>ring.push(x.o)); }
+  const i1=ring.indexOf(o1), i2=ring.indexOf(o2);
+  if(i1===i2) return [V.flat()];
+  const arc=(a,b)=>{ const r=[]; for(let i=a;;i=(i+1)%ring.length){ r.push(ring[i]); if(i===b) break; } return r; };
+  const inObj=inner.map(P=>({P}));
+  const r1=arc(i1,i2).concat(inObj.slice().reverse()), r2=arc(i2,i1).concat(inObj);
+  // base 2D do triângulo (mesmo sentido do original)
+  const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const nrm=cr(sub(V[1],V[0]),sub(V[2],V[0])), nl=Math.hypot(nrm[0],nrm[1],nrm[2]);
+  if(nl<1e-12) return null;
+  const N=nrm.map(x=>x/nl), eu=sub(V[1],V[0]), el=Math.hypot(eu[0],eu[1],eu[2]), U=eu.map(x=>x/el), Vv=cr(N,U);
+  const out=[];
+  for(const r of [r1,r2]){
+    const clean=[]; for(const o of r){ const last=clean[clean.length-1]; if(!last||d3(last.P,o.P)>1e-5) clean.push(o); }
+    if(clean.length>1&&d3(clean[0].P,clean[clean.length-1].P)<=1e-5) clean.pop();
+    if(clean.length<3) continue;
+    const vs=clean.map(o=>{ const d=sub(o.P,V[0]); return {x:d[0]*U[0]+d[1]*U[1]+d[2]*U[2],y:d[0]*Vv[0]+d[1]*Vv[1]+d[2]*Vv[2],P:o.P}; });
+    const res=triangulateRegion(vs,[]);
+    for(const tr of res.tris) out.push([...tr[0].P,...tr[1].P,...tr[2].P]);
+  }
+  return out;
+}
+// separa o modelo ao longo do laço e fecha cada lado com uma tampa
+// divide um triângulo por vários trechos de caminho (subdivisão planar + extração de faces)
+function splitTriangleMulti(src,t,segs){
+  const q=t*9, V=[[src[q],src[q+1],src[q+2]],[src[q+3],src[q+4],src[q+5]],[src[q+6],src[q+7],src[q+8]]];
+  const elen=Math.max(d3(V[0],V[1]),d3(V[1],V[2]),d3(V[2],V[0])), tol=Math.max(2e-3,2e-4*elen);
+  const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const nrm=cr(sub(V[1],V[0]),sub(V[2],V[0])), nl=Math.hypot(nrm[0],nrm[1],nrm[2]); if(nl<1e-12) return null;
+  const N=nrm.map(x=>x/nl), eu=sub(V[1],V[0]), el=Math.hypot(eu[0],eu[1],eu[2]), U=eu.map(x=>x/el), Vv=cr(N,U);
+  const verts=[]; // {P,x,y,onEdge:-1|0..2,t}
+  const mk=P=>{ const d=sub(P,V[0]); return {P,x:d[0]*U[0]+d[1]*U[1]+d[2]*U[2],y:d[0]*Vv[0]+d[1]*Vv[1]+d[2]*Vv[2],on:-1,tp:0}; };
+  const vid=P=>{ for(let i=0;i<verts.length;i++) if(d3(verts[i].P,P)<1e-5) return i; verts.push(mk(P)); return verts.length-1; };
+  V.forEach(P=>vid(P)); // 0,1,2 = cantos
+  const cls=i=>{
+    if(i<3) return;
+    const E=verts[i].P; let be=-1,bd=Infinity;
+    for(let k=0;k<3;k++){ const dd=distPS(E,V[k],V[(k+1)%3]); if(dd<bd){bd=dd;be=k;} }
+    if(bd<=tol){ const a=V[be],b=V[(be+1)%3], dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2]; verts[i].on=be; verts[i].tp=((E[0]-a[0])*dx+(E[1]-a[1])*dy+(E[2]-a[2])*dz)/(dx*dx+dy*dy+dz*dz); }
+  };
+  const pathEdges=[];
+  for(const [p,qq] of segs){ const a=vid(p), b=vid(qq); if(a!==b) pathEdges.push([a,b]); }
+  for(let i=3;i<verts.length;i++) cls(i);
+  const edgeSet=new Set(), edges=[], addE=(a,b)=>{ if(a===b) return; const k=a<b?a*1000+b:b*1000+a; if(edgeSet.has(k)) return; edgeSet.add(k); edges.push([a,b]); };
+  for(let k=0;k<3;k++){
+    const list=[{i:k,tp:0},{i:(k+1)%3,tp:1}];
+    for(let i=3;i<verts.length;i++) if(verts[i].on===k) list.push({i,tp:verts[i].tp});
+    list.sort((a,b)=>a.tp-b.tp);
+    for(let j=0;j+1<list.length;j++) addE(list[j].i,list[j+1].i);
+  }
+  const onBoundary=i=>i<3||verts[i].on>=0;
+  for(const [a,b] of pathEdges){
+    if(onBoundary(a)&&onBoundary(b)){ // trecho colado na aresta do triângulo: já existe
+      const ea=a<3?-2:verts[a].on, eb=b<3?-2:verts[b].on;
+      if(ea===eb&&ea>=0) continue;
+      if(a<3&&b<3) continue;
+      if((a<3&&(b>=3)&&(verts[b].on===a||verts[b].on===(a+2)%3))||(b<3&&(a>=3)&&(verts[a].on===b||verts[a].on===(b+2)%3))) continue;
+    }
+    addE(a,b);
+  }
+  // trechos não podem se cruzar
+  for(let i=0;i<edges.length;i++) for(let j=i+1;j<edges.length;j++){
+    const [a,b]=edges[i],[c,d]=edges[j]; if(a===c||a===d||b===c||b===d) continue;
+    if(segInter(verts[a],verts[b],verts[c],verts[d],1e-12)) return null;
+  }
+  // faces: ordena vizinhos por ângulo e percorre as meias-arestas
+  const nb=verts.map(()=>[]); for(const [a,b] of edges){ nb[a].push(b); nb[b].push(a); }
+  nb.forEach((l,i)=>l.sort((a,b)=>Math.atan2(verts[a].y-verts[i].y,verts[a].x-verts[i].x)-Math.atan2(verts[b].y-verts[i].y,verts[b].x-verts[i].x)));
+  const used=new Set(), out=[];
+  for(const [a0,b0] of edges) for(const [u0,v0] of [[a0,b0],[b0,a0]]){
+    if(used.has(u0*1000+v0)) continue;
+    const face=[]; let u=u0,v=v0, guard=0;
+    for(;;){
+      used.add(u*1000+v); face.push(u);
+      const l=nb[v], idx=l.indexOf(u), w=l[(idx-1+l.length)%l.length];
+      u=v; v=w; if(u===u0&&v===v0) break; if(++guard>200) return null;
+    }
+    const vs=face.map(i=>verts[i]); const ar=area2(vs);
+    if(ar<=1e-12) continue; // face externa (sentido horário) ou degenerada
+    const res=triangulateRegion(vs.map(o=>({x:o.x,y:o.y,P:o.P})),[]);
+    for(const tr of res.tris) out.push([...tr[0].P,...tr[1].P,...tr[2].P]);
+  }
+  return out;
+}
+// alinha pontos do contorno a vértices muito próximos e remove arestas de comprimento zero
+function snapLoop(src,loop){
+  const nL0=loop.pts.length, pts=loop.pts.map(p=>p.slice()), tris=loop.tris;
+  for(let k=0;k<nL0;k++){
+    const tA=tris[k], tB=tris[(k-1+nL0)%nL0]; if(tA===tB) continue; // ponto de controle (dentro do triângulo)
+    let best=null,bd=Infinity;
+    for(const t of [tA,tB]){
+      const q=t*9, V=[[src[q],src[q+1],src[q+2]],[src[q+3],src[q+4],src[q+5]],[src[q+6],src[q+7],src[q+8]]];
+      const tol=Math.max(2e-3,2e-4*Math.max(d3(V[0],V[1]),d3(V[1],V[2]),d3(V[2],V[0])));
+      for(const Vv of V){ const dd=d3(pts[k],Vv); if(dd<tol&&dd<bd){ bd=dd; best=Vv; } }
+    }
+    if(best) pts[k]=best;
+  }
+  const np=[],nt=[];
+  for(let k=0;k<nL0;k++){ const a=pts[k],b=pts[(k+1)%nL0]; if(a[0]===b[0]&&a[1]===b[1]&&a[2]===b[2]) continue; np.push(a); nt.push(tris[k]); }
+  return {pts:np,tris:nt};
+}
+function cutAlongLoop(src,loop0){
+  const loop=snapLoop(src,loop0), {pts,tris}=loop, nL=pts.length, warn=[];
+  if(nL<3) return {error:'Contorno pequeno demais. Afaste os pontos.'};
+  const byTri=new Map();
+  for(let k=0;k<nL;k++){ if(!byTri.has(tris[k])) byTri.set(tris[k],[]); byTri.get(tris[k]).push(k); }
+  for(const ks of byTri.values()) if(ks.length>8) return {error:'O contorno passa muitas vezes pela mesma região. Afaste os pontos entre si.'};
+  const nT=src.length/9, whole=new Float32Array(src.length), pieces=[]; let wi=0;
+  for(let t=0;t<nT;t++){ if(!byTri.has(t)){ whole.set(src.subarray(t*9,t*9+9),wi); wi+=9; } }
+  for(const [t,ks] of byTri){
+    const parts=splitTriangleMulti(src,t,ks.map(k=>[pts[k],pts[(k+1)%nL]]));
+    if(!parts) return {error:'Não consegui dividir um triângulo da malha ao longo do contorno (o contorno se cruza?). Tente mover um ponto.'};
+    for(const p of parts) pieces.push(p);
+  }
+  const split=new Float32Array(pieces.length*9); pieces.forEach((p,i)=>split.set(p,i*9));
+  const all=concat(whole.slice(0,wi),split);
+  const barrier=new Float32Array(nL*6); for(let k=0;k<nL;k++){ barrier.set(pts[k],k*6); barrier.set(pts[(k+1)%nL],k*6+3); }
+  const lab=labelComponents(all,barrier);
+  const a=pts[0],b=pts[1%nL], ia=lab.W.id(a[0],a[1],a[2]), ib=lab.W.id(b[0],b[1],b[2]);
+  let cPlus=null,cMinus=null;
+  for(const t of lab.edgeTris(ia,ib)){
+    for(let k=0;k<3;k++){
+      const x=lab.ids[t*3+k], y=lab.ids[t*3+(k+1)%3];
+      if(x===ia&&y===ib) cPlus=lab.comp[t]; else if(x===ib&&y===ia) cMinus=lab.comp[t];
+    }
+  }
+  if(cPlus===null||cMinus===null) return {error:'Não consegui identificar os dois lados do contorno.'};
+  if(cPlus===cMinus) return {error:'Este contorno não separa o modelo em duas partes. Feche o contorno em volta da região.',dbg:{all,barrier}};
+  // tampa: triangula o contorno projetado no plano médio (Newell)
+  let nx=0,ny=0,nz=0;
+  for(let k=0;k<nL;k++){ const p=pts[k],q=pts[(k+1)%nL]; nx+=(p[1]-q[1])*(p[2]+q[2]); ny+=(p[2]-q[2])*(p[0]+q[0]); nz+=(p[0]-q[0])*(p[1]+q[1]); }
+  const nl=Math.hypot(nx,ny,nz); if(nl<1e-9) return {error:'Contorno degenerado (área zero).'};
+  const nc=[nx/nl,ny/nl,nz/nl], cen=[0,0,0]; for(const p of pts){cen[0]+=p[0]/nL;cen[1]+=p[1]/nL;cen[2]+=p[2]/nL;}
+  const {u,v}=planeBasis(nc);
+  const vs=pts.map(P=>{ const dx=P[0]-cen[0],dy=P[1]-cen[1],dz=P[2]-cen[2]; return {x:dx*u[0]+dy*u[1]+dz*u[2],y:dx*v[0]+dy*v[1]+dz*v[2],P}; });
+  let dev=0; for(const P of pts){ dev=Math.max(dev,Math.abs((P[0]-cen[0])*nc[0]+(P[1]-cen[1])*nc[1]+(P[2]-cen[2])*nc[2])); }
+  const capR=triangulateRegion(vs,[]);
+  if(!capR.ok) warn.push('A tampa do corte teve triangulação imperfeita (contorno muito sinuoso); confira antes de imprimir.');
+  const capPlus=[], capMinus=[]; // plus: usa a aresta no mesmo sentido do laço -> tampa invertida
+  for(const tr of capR.tris){ capMinus.push(...tr[0].P,...tr[1].P,...tr[2].P); capPlus.push(...tr[0].P,...tr[2].P,...tr[1].P); }
+  const idx=new Map(), counts=[];
+  for(let t=0;t<all.length/9;t++){ const c=lab.comp[t]; if(!idx.has(c)){ idx.set(c,counts.length); counts.push(0); } }
+  // dobras: triângulo do corpo e da tampa coincidentes com orientação oposta se anulam
+  const nWholeT=wi/9, kill=new Set();
+  const cancel=(compI,cap)=>{
+    const cand=[]; for(let t=nWholeT;t<all.length/9;t++) if(idx.get(lab.comp[t])===compI) cand.push({body:true,i:t,v:all.subarray(t*9,t*9+9)});
+    for(let j=0;j<cap.length/9;j++) cand.push({body:false,i:j,v:cap.slice(j*9,j*9+9)});
+    const W2=new Welder(cand.length*3+16), map=new Map();
+    for(const c of cand){
+      const ids=[W2.id(c.v[0],c.v[1],c.v[2]),W2.id(c.v[3],c.v[4],c.v[5]),W2.id(c.v[6],c.v[7],c.v[8])];
+      const m=Math.min(...ids), k=ids.indexOf(m), x=ids[(k+1)%3], y=ids[(k+2)%3];
+      const key=[m,Math.min(x,y),Math.max(x,y)].join(','), e=map.get(key)||{p:[],n:[]};
+      (x<y?e.p:e.n).push(c); map.set(key,e);
+    }
+    const killBody=new Set(), killCap=new Set();
+    for(const e of map.values()) while(e.p.length&&e.n.length){ for(const c of [e.p.pop(),e.n.pop()]) (c.body?killBody:killCap).add(c.i); }
+    return {killBody,killCap};
+  };
+  const cpIdx=idx.get(cPlus), cmIdx=idx.get(cMinus);
+  const kp=cancel(cpIdx,capPlus), km=cancel(cmIdx,capMinus);
+  for(const t of kp.killBody) kill.add(t); for(const t of km.killBody) kill.add(t);
+  const keepCap=(cap,kc)=>{ const r=[]; for(let j=0;j<cap.length/9;j++) if(!kc.has(j)) for(let k=0;k<9;k++) r.push(cap[j*9+k]); return r; };
+  const capP=keepCap(capPlus,kp.killCap), capM=keepCap(capMinus,km.killCap);
+  // validação local: nenhuma aresta com mais de 2 faces em volta do contorno
+  {
+    const patch=new Set();
+    for(let t=nWholeT;t<all.length/9;t++) if(!kill.has(t)) for(let k=0;k<3;k++) patch.add(lab.ids[t*3+k]);
+    const nbm=counts.map(()=>new Map()), addE=(m,a,b)=>{ if(a===b) return; const key=a<b?a*4194304+b:b*4194304+a; m.set(key,(m.get(key)||0)+1); };
+    const addTri=(m,a,b,c)=>{ addE(m,a,b); addE(m,b,c); addE(m,c,a); };
+    for(let t=0;t<all.length/9;t++){
+      if(kill.has(t)) continue;
+      const a=lab.ids[t*3],b=lab.ids[t*3+1],c=lab.ids[t*3+2];
+      if(patch.has(a)||patch.has(b)||patch.has(c)) addTri(nbm[idx.get(lab.comp[t])],a,b,c);
+    }
+    for(const [cap,ci] of [[capP,cpIdx],[capM,cmIdx]]) for(let j=0;j<cap.length;j+=9){
+      addTri(nbm[ci],lab.W.id(cap[j],cap[j+1],cap[j+2]),lab.W.id(cap[j+3],cap[j+4],cap[j+5]),lab.W.id(cap[j+6],cap[j+7],cap[j+8]));
+    }
+    for(const m of nbm) for(const c of m.values()) if(c>2) return {error:'Este contorno gerou uma geometria inválida (curva muito fechada). Mova um dos pontos ou afaste-os e tente de novo.'};
+  }
+  for(let t=0;t<all.length/9;t++) if(!kill.has(t)) counts[idx.get(lab.comp[t])]+=9;
+  const soups=counts.map((c,i)=>new Float32Array(c+(i===cpIdx?capP.length:0)+(i===cmIdx?capM.length:0)));
+  const fill=counts.map(()=>0);
+  for(let t=0;t<all.length/9;t++){ if(kill.has(t)) continue; const i=idx.get(lab.comp[t]); soups[i].set(all.subarray(t*9,t*9+9),fill[i]); fill[i]+=9; }
+  soups[cpIdx].set(capP,fill[cpIdx]); soups[cmIdx].set(capM,fill[cmIdx]);
+  const out=soups.map((sp,i)=>({soup:sp,base:i===cmIdx?nc:(i===cpIdx?[-nc[0],-nc[1],-nc[2]]:null)}));
+  out.sort((x,y)=>y.soup.length-x.soup.length);
+  if(dev>0.5) warn.push('A face de corte é curva (desvio de '+dev.toFixed(1)+' mm do plano médio): imprima com suportes e sem encaixes.');
+  return {pieces:out,warn,dev,normal:nc};
+}
+
+return {pickSurface,surfacePath,buildLoop,cutAlongLoop,makePick,labelComponents,shapePoly,offsetConvex,Welder,boundsOf,concat,projRange,mapSoup,computeNormals,meshStats,sliceSoup,buildRegions,triangulateRegion,placePins,firstHits,cutPiece,parseSTL,parseOBJ,writeSTL,orientForPrint,planeBasis};
 })();
 
 // ===================== CORTADOR 3D (módulo nativo) =====================
 const VCut=(function(){
 const C=VCutCore;
 const THREE_URL='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-const S={ready:false,loading:null,pieces:[],active:null,nextId:1,partN:0,undo:[],axis:'z',tiltA:0,tiltB:0,pos:0.5,range:[0,1],explode:0,baseName:'modelo',busy:false,raf:0,center:[0,0,0],radius:50,minZ:0,prefsLoaded:false};
+const S={ready:false,loading:null,pieces:[],active:null,nextId:1,partN:0,undo:[],axis:'z',tiltA:0,tiltB:0,pos:0.5,range:[0,1],explode:0,baseName:'modelo',busy:false,raf:0,center:[0,0,0],radius:50,minZ:0,prefsLoaded:false,
+  mode:'plano',areaAuto:true,areaW:100,areaH:100,offU:0,offV:0,dragArea:false,points:[],sel:-1,paths:[],pathTimer:0};
 const COLORS=[0x9fb4c7,0xc9b48a,0xa4c49a,0xc79aae,0x9aa6c9,0xc9c19a];
 const $=id=>document.getElementById(id);
 const rad=d=>d*Math.PI/180;
@@ -3264,24 +3791,30 @@ function loadPrefs(){
   try{
     const p=JSON.parse(localStorage.getItem('vtm_cortador_prefs')||'null'); if(!p) return;
     if(p.tipo) $('cut-tipo').value=p.tipo;
+    if(p.forma) $('cut-forma').value=p.forma;
+    if(p.rot!=null) $('cut-rot').value=p.rot;
     if(p.diam) $('cut-diam').value=p.diam; if(p.prof) $('cut-prof').value=p.prof;
     if(p.folga!=null) $('cut-folga').value=p.folga; if(p.qtd) $('cut-qtd').value=p.qtd;
     if(p.orient!=null) $('cut-orient').checked=!!p.orient;
   }catch(e){}
 }
 function savePrefs(){
-  try{ localStorage.setItem('vtm_cortador_prefs',JSON.stringify({tipo:$('cut-tipo').value,diam:+$('cut-diam').value,prof:+$('cut-prof').value,folga:+$('cut-folga').value,qtd:+$('cut-qtd').value,orient:$('cut-orient').checked})); }catch(e){}
+  try{ localStorage.setItem('vtm_cortador_prefs',JSON.stringify({tipo:$('cut-tipo').value,forma:$('cut-forma').value,rot:+$('cut-rot').value,diam:+$('cut-diam').value,prof:+$('cut-prof').value,folga:+$('cut-folga').value,qtd:+$('cut-qtd').value,orient:$('cut-orient').checked})); }catch(e){}
   updateTipoUI();
 }
 function updateTipoUI(){
-  const t=$('cut-tipo').value, off=t==='nenhum';
-  ['cut-diam','cut-prof','cut-folga','cut-qtd'].forEach(id=>{ $(id).disabled=off; });
-  const hint={nenhum:'Corte simples, sem furos nem pinos.',dowel:'Furos nas duas partes e um pino separado para imprimir. Imprima o pino deitado.',plug:'Uma parte recebe o pino (macho), a outra o furo (fêmea). A parte com pino não é virada automaticamente para a mesa.'};
-  $('cut-tipo-hint').textContent=hint[t]||'';
+  const t=$('cut-tipo').value, off=t==='nenhum', livre=S.mode==='livre', forma=$('cut-forma').value;
+  ['cut-tipo','cut-forma','cut-diam','cut-prof','cut-folga','cut-qtd','cut-rot'].forEach(id=>{ $(id).disabled=livre||(id!=='cut-tipo'&&off); });
+  $('cut-rot').disabled=livre||off||forma==='redondo';
+  const hint={nenhum:'Corte simples, sem furos nem pinos.',dowel:'Furos nas duas partes e uma peça de encaixe solta para imprimir deitada.',plug:'Uma parte recebe o pino (macho), a outra o furo (fêmea). A parte com pino não é virada automaticamente para a mesa.'};
+  let h=hint[t]||'';
+  if(forma==='dovetail'&&!off) h+=' Rabo de andorinha: pino em forma de cauda trapezoidal (ponta larga = diâmetro), que impede a peça de girar e dá direção ao encaixe.';
+  if(forma==='quadrado'&&!off) h+=' Pino quadrado: impede a peça de girar.';
+  $('cut-tipo-hint').textContent=livre?'Encaixes não estão disponíveis no corte livre: a face de corte é curva.':h;
 }
 function readOpts(){
   const clamp=(v,a,b,d)=>{v=parseFloat(v); return isFinite(v)?Math.min(b,Math.max(a,v)):d;};
-  return {tipo:$('cut-tipo').value,diam:clamp($('cut-diam').value,2,30,5),prof:clamp($('cut-prof').value,3,60,10),folga:clamp($('cut-folga').value,0,1,0.15),qtd:Math.round(clamp($('cut-qtd').value,1,4,1))};
+  return {tipo:$('cut-tipo').value,forma:$('cut-forma').value,rot:clamp($('cut-rot').value,-180,180,0),diam:clamp($('cut-diam').value,2,30,5),prof:clamp($('cut-prof').value,3,60,10),folga:clamp($('cut-folga').value,0,1,0.15),qtd:Math.round(clamp($('cut-qtd').value,1,4,1))};
 }
 
 // ---------- cena ----------
@@ -3296,12 +3829,14 @@ function initScene(){
   S.scene.add(new T.AmbientLight(0xffffff,0.6));
   cam.target=new T.Vector3();
   S.group=new T.Group(); S.scene.add(S.group);
-  S.planeA=new T.Plane(); S.planeB=new T.Plane();
-  S.matA=new T.MeshPhongMaterial({color:0x2bc4ff,side:T.DoubleSide,clippingPlanes:[S.planeA],shininess:25});
-  S.matB=new T.MeshPhongMaterial({color:0xff8a4d,side:T.DoubleSide,clippingPlanes:[S.planeB],shininess:25});
+  S.ptGroup=new T.Group(); S.scene.add(S.ptGroup);
+  S.planeA=new T.Plane(); S.planeB=new T.Plane(); S.wp=[new T.Plane(),new T.Plane(),new T.Plane(),new T.Plane()];
+  const ov={side:T.DoubleSide,shininess:25,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2};
+  S.matA=new T.MeshPhongMaterial(Object.assign({color:0x2bc4ff,clippingPlanes:[S.planeA].concat(S.wp)},ov));
+  S.matB=new T.MeshPhongMaterial(Object.assign({color:0xff8a4d,clippingPlanes:[S.planeB].concat(S.wp)},ov));
   S.planeMesh=new T.Group();
   const q=new T.PlaneGeometry(1,1);
-  S.planeMesh.add(new T.Mesh(q,new T.MeshBasicMaterial({color:0x00d4ff,transparent:true,opacity:0.14,side:T.DoubleSide,depthWrite:false})));
+  S.planeMesh.add(new T.Mesh(q,new T.MeshBasicMaterial({color:0x00d4ff,transparent:true,opacity:0.12,side:T.DoubleSide,depthWrite:false})));
   S.planeMesh.add(new T.LineSegments(new T.EdgesGeometry(q),new T.LineBasicMaterial({color:0x00d4ff})));
   S.planeMesh.visible=false; S.scene.add(S.planeMesh);
   S.grid=new T.GridHelper(100,20,0x1e3a55,0x14263a); S.grid.rotation.x=Math.PI/2; S.scene.add(S.grid);
@@ -3325,16 +3860,62 @@ function resize(){
   S.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
   S.renderer.setSize(w,h,false); S.camera.aspect=w/h; S.camera.updateProjectionMatrix(); requestRender();
 }
+// raio do mundo a partir de um ponto da tela
+function rayAt(cx,cy){
+  const r=$('cut-canvas').getBoundingClientRect();
+  const v=new T.Vector3(((cx-r.left)/r.width)*2-1,-((cy-r.top)/r.height)*2+1,0.5).unproject(S.camera);
+  const o=S.camera.position, d=v.sub(o).normalize();
+  return {o:[o.x,o.y,o.z],d:[d.x,d.y,d.z]};
+}
+function rayPlane(cx,cy){
+  const g=areaGeom(); if(!g) return null; const r=rayAt(cx,cy);
+  const dn=g.n[0]*r.d[0]+g.n[1]*r.d[1]+g.n[2]*r.d[2]; if(Math.abs(dn)<1e-6) return null;
+  const t=(g.d-(g.n[0]*r.o[0]+g.n[1]*r.o[1]+g.n[2]*r.o[2]))/dn;
+  return [r.o[0]+r.d[0]*t,r.o[1]+r.d[1]*t,r.o[2]+r.d[2]*t];
+}
+function pickAt(cx,cy){ const p=activePiece(); if(!p) return null; const r=rayAt(cx,cy); return C.pickSurface(p.soup,r.o,r.d); }
+function nearestPoint(cx,cy){
+  const r=$('cut-canvas').getBoundingClientRect(); let best=-1,bd=18;
+  S.points.forEach((pt,i)=>{
+    const v=new T.Vector3(pt.p[0],pt.p[1],pt.p[2]).project(S.camera);
+    const sx=(v.x+1)/2*r.width+r.left, sy=(1-v.y)/2*r.height+r.top, dd=Math.hypot(sx-cx,sy-cy);
+    if(dd<bd){ bd=dd; best=i; }
+  });
+  return best;
+}
 function bindPointer(canvas){
-  const ptrs=new Map();
+  const ptrs=new Map(); let drag=null, click=null;
   const pan=(dx,dy)=>{
     const e=S.camera.matrixWorld.elements, k=cam.dist*0.0016;
     cam.target.x+=(-dx*e[0]+dy*e[4])*k; cam.target.y+=(-dx*e[1]+dy*e[5])*k; cam.target.z+=(-dx*e[2]+dy*e[6])*k;
   };
-  canvas.addEventListener('pointerdown',e=>{ canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,b:e.button}); });
+  canvas.addEventListener('pointerdown',e=>{
+    canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,b:e.button});
+    if(ptrs.size>1){ drag=null; click=null; return; }
+    if(e.button!==0||S.busy||!activePiece()||S.explode>0.001) return;
+    if(S.mode==='plano'&&S.dragArea){ const h=rayPlane(e.clientX,e.clientY); if(h) drag={type:'area',h}; }
+    else if(S.mode==='livre'){
+      const i=nearestPoint(e.clientX,e.clientY);
+      if(i>=0){ drag={type:'pt',i,moved:false}; S.sel=i; renderPoints(); }
+      else click={x:e.clientX,y:e.clientY};
+    }
+  });
   canvas.addEventListener('pointermove',e=>{
     const p=ptrs.get(e.pointerId); if(!p) return;
     const dx=e.clientX-p.x, dy=e.clientY-p.y;
+    if(drag&&ptrs.size===1){
+      if(drag.type==='area'){
+        const h=rayPlane(e.clientX,e.clientY), g=areaGeom();
+        if(h&&g){ if(S.areaAuto){ S.areaW=g.W; S.areaH=g.H; S.areaAuto=false; }
+          const dl=[h[0]-drag.h[0],h[1]-drag.h[1],h[2]-drag.h[2]];
+          S.offU+=dl[0]*g.u[0]+dl[1]*g.u[1]+dl[2]*g.u[2]; S.offV+=dl[0]*g.v[0]+dl[1]*g.v[1]+dl[2]*g.v[2]; drag.h=h; updatePlane(false); }
+      } else {
+        const hit=pickAt(e.clientX,e.clientY);
+        if(hit){ S.points[drag.i]={tri:hit.tri,p:hit.p,n:hit.n}; drag.moved=true; renderPoints(); }
+      }
+      p.x=e.clientX; p.y=e.clientY; return;
+    }
+    if(click&&Math.hypot(e.clientX-click.x,e.clientY-click.y)>6) click=null;
     if(ptrs.size===1){
       if(p.b===2||p.b===1||e.shiftKey) pan(dx,dy);
       else { cam.theta-=dx*0.008; cam.phi=Math.min(Math.PI-0.05,Math.max(0.05,cam.phi-dy*0.008)); }
@@ -3346,7 +3927,11 @@ function bindPointer(canvas){
     }
     p.x=e.clientX; p.y=e.clientY; updateCamera();
   });
-  const up=e=>{ ptrs.delete(e.pointerId); };
+  const up=e=>{
+    if(click&&ptrs.size===1&&e.type==='pointerup'&&e.button===0) addPointAt(e.clientX,e.clientY);
+    if(drag&&drag.type==='pt'&&drag.moved) recomputePaths(drag.i);
+    drag=null; click=null; ptrs.delete(e.pointerId);
+  };
   canvas.addEventListener('pointerup',up); canvas.addEventListener('pointercancel',up);
   canvas.addEventListener('wheel',e=>{ e.preventDefault(); cam.dist=Math.min(S.radius*40,Math.max(S.radius*0.2,cam.dist*Math.exp(e.deltaY*0.001))); updateCamera(); },{passive:false});
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
@@ -3385,13 +3970,12 @@ function rebuildScene(){
     const mat=new T.MeshPhongMaterial({color:p.tipo==='pino'?0xffd23f:COLORS[p.color%COLORS.length],shininess:25,side:T.DoubleSide});
     if(exploded&&isAct) mat.emissive.setHex(0x0d3447);
     const m=new T.Mesh(g,mat); m.userData.own=true; m.userData.pid=p.id;
-    m.visible=!(isAct&&!exploded&&S.pieces.length>0&&p.tipo!=='pino');
     S.group.add(m);
-    if(isAct&&!exploded&&p.tipo!=='pino'){
+    if(isAct&&!exploded&&p.tipo!=='pino'&&S.mode==='plano'){
       const a=new T.Mesh(g,S.matA), b=new T.Mesh(g,S.matB); S.group.add(a); S.group.add(b);
     }
   }
-  applyExplode(); updatePlane(false); requestRender();
+  applyExplode(); updatePlane(false); renderPoints(); requestRender();
 }
 function applyExplode(){
   const k=S.explode*0.9;
@@ -3402,7 +3986,7 @@ function applyExplode(){
   }
 }
 
-// ---------- plano de corte ----------
+// ---------- plano de corte e área ----------
 function planeNormal(){
   const base=S.axis==='x'?[1,0,0]:S.axis==='y'?[0,1,0]:[0,0,1];
   const e1=S.axis==='x'?[0,1,0]:S.axis==='y'?[0,0,1]:[1,0,0];
@@ -3410,20 +3994,31 @@ function planeNormal(){
   return new T.Vector3(base[0],base[1],base[2]).applyAxisAngle(new T.Vector3(e1[0],e1[1],e1[2]),rad(S.tiltA)).applyAxisAngle(new T.Vector3(e2[0],e2[1],e2[2]),rad(S.tiltB)).normalize();
 }
 const planeD=()=>S.range[0]+(S.range[1]-S.range[0])*S.pos;
+// geometria atual da área de corte (retângulo no plano)
+function areaGeom(){
+  const p=activePiece(); if(!p||!T) return null;
+  const nV=planeNormal(), n=[nV.x,nV.y,nV.z], d=planeD(), {u,v}=C.planeBasis(n), b=bounds(p);
+  const c=[(b.min[0]+b.max[0])/2,(b.min[1]+b.max[1])/2,(b.min[2]+b.max[2])/2];
+  const t=c[0]*n[0]+c[1]*n[1]+c[2]*n[2]-d, B=[c[0]-n[0]*t,c[1]-n[1]*t,c[2]-n[2]*t];
+  const diag=Math.hypot(b.max[0]-b.min[0],b.max[1]-b.min[1],b.max[2]-b.min[2]);
+  const W=S.areaAuto?diag*1.15:S.areaW, H=S.areaAuto?diag*1.15:S.areaH;
+  const ctr=[B[0]+u[0]*S.offU+v[0]*S.offV,B[1]+u[1]*S.offU+v[1]*S.offV,B[2]+u[2]*S.offU+v[2]*S.offV];
+  return {n,d,u,v,B,ctr,W,H,diag};
+}
 function updatePlane(recompute){
   const p=activePiece();
   if(!S.ready||!p||p.tipo==='pino'){ if(S.planeMesh) S.planeMesh.visible=false; syncPosUI(); requestRender(); return; }
-  const n=planeNormal();
-  if(recompute) S.range=C.projRange(p.soup,[n.x,n.y,n.z]);
-  const d=planeD(), b=bounds(p);
-  S.planeA.set(n,-d); S.planeB.set(n.clone().negate(),d);
-  const c=new T.Vector3((b.min[0]+b.max[0])/2,(b.min[1]+b.max[1])/2,(b.min[2]+b.max[2])/2);
-  const proj=c.clone().sub(n.clone().multiplyScalar(c.dot(n)-d));
-  const size=Math.hypot(b.max[0]-b.min[0],b.max[1]-b.min[1],b.max[2]-b.min[2])*1.15;
-  S.planeMesh.position.copy(proj); S.planeMesh.scale.set(size,size,1);
-  S.planeMesh.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),n);
-  S.planeMesh.visible=S.explode<=0.001;
-  syncPosUI(); requestRender();
+  const nV=planeNormal();
+  if(recompute) S.range=C.projRange(p.soup,[nV.x,nV.y,nV.z]);
+  const g=areaGeom();
+  S.planeA.set(nV,-g.d); S.planeB.set(nV.clone().negate(),g.d);
+  const U=new T.Vector3(g.u[0],g.u[1],g.u[2]), V=new T.Vector3(g.v[0],g.v[1],g.v[2]), c=new T.Vector3(g.ctr[0],g.ctr[1],g.ctr[2]);
+  S.wp[0].set(U.clone(),-c.dot(U)+g.W/2); S.wp[1].set(U.clone().negate(),c.dot(U)+g.W/2);
+  S.wp[2].set(V.clone(),-c.dot(V)+g.H/2); S.wp[3].set(V.clone().negate(),c.dot(V)+g.H/2);
+  S.planeMesh.position.copy(c); S.planeMesh.scale.set(g.W,g.H,1);
+  S.planeMesh.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(U,V,nV));
+  S.planeMesh.visible=S.mode==='plano'&&S.explode<=0.001;
+  syncPosUI(); syncAreaUI(g); requestRender();
 }
 function syncPosUI(){
   const sl=$('cut-pos'), mm=$('cut-pos-mm'); if(!sl) return;
@@ -3432,6 +4027,14 @@ function syncPosUI(){
   $('cut-tiltA-v').textContent=S.tiltA+'°'; $('cut-tiltB-v').textContent=S.tiltB+'°';
   ['x','y','z'].forEach(a=>{ $('cut-ax-'+a).className='btn '+(S.axis===a?'btn-primary':'btn-ghost'); });
 }
+function syncAreaUI(g){
+  if(!g||!$('cut-aw')) return;
+  const mx=Math.max(10,Math.ceil(g.diag*1.5)), ox=Math.max(10,Math.ceil(g.diag*0.75));
+  const set=(id,lo,hi,val,txt)=>{ const el=$(id); el.min=lo; el.max=hi; el.value=val; $(id+'-v').textContent=txt; };
+  set('cut-aw',5,mx,Math.min(mx,g.W),Math.round(g.W)+' mm'+(S.areaAuto?' (auto)':''));
+  set('cut-ah',5,mx,Math.min(mx,g.H),Math.round(g.H)+' mm'+(S.areaAuto?' (auto)':''));
+  set('cut-ou',-ox,ox,S.offU,S.offU.toFixed(1)+' mm'); set('cut-ov',-ox,ox,S.offV,S.offV.toFixed(1)+' mm');
+}
 function setAxis(a){ S.axis=a; updatePlane(true); }
 function onPos(v){ S.pos=Math.min(1,Math.max(0,v/1000)); updatePlane(false); }
 function onPosMM(v){
@@ -3439,8 +4042,74 @@ function onPosMM(v){
   const span=S.range[1]-S.range[0]; S.pos=span>0?Math.min(1,Math.max(0,(v-S.range[0])/span)):0.5; updatePlane(false);
 }
 function onTilt(which,v){ if(which==='A') S.tiltA=+v; else S.tiltB=+v; updatePlane(true); }
-function resetPlane(){ S.tiltA=0; S.tiltB=0; S.pos=0.5; $('cut-tiltA').value=0; $('cut-tiltB').value=0; updatePlane(true); }
+function resetPlane(){ S.tiltA=0; S.tiltB=0; S.pos=0.5; $('cut-tiltA').value=0; $('cut-tiltB').value=0; areaFit(); }
+function onArea(which,v){
+  v=parseFloat(v); if(!isFinite(v)) return;
+  if((which==='W'||which==='H')&&S.areaAuto){ const g=areaGeom(); S.areaW=g.W; S.areaH=g.H; S.areaAuto=false; }
+  if(which==='W') S.areaW=v; else if(which==='H') S.areaH=v; else if(which==='U') S.offU=v; else S.offV=v;
+  updatePlane(false);
+}
+function areaFit(){ S.areaAuto=true; S.offU=0; S.offV=0; updatePlane(true); }
+function setDragArea(on){ S.dragArea=!!on; $('cut-canvas').style.cursor=S.mode==='livre'?'crosshair':(S.dragArea?'move':'grab'); }
 function onExplode(v){ S.explode=v/100; rebuildScene(); }
+
+// ---------- corte livre (pontos na superfície) ----------
+function setMode(m){
+  S.mode=m;
+  $('cut-m-plano').className='btn '+(m==='plano'?'btn-primary':'btn-ghost');
+  $('cut-m-livre').className='btn '+(m==='livre'?'btn-primary':'btn-ghost');
+  $('cut-sec-plano').style.display=m==='plano'?'':'none';
+  $('cut-sec-livre').style.display=m==='livre'?'':'none';
+  $('cut-btn').textContent=m==='livre'?'✂️ Cortar pelos pontos':'✂️ Cortar peça ativa';
+  $('cut-mode-hint').textContent=m==='livre'?'Marque pontos ao redor da região que quer separar (ombro, braço, cabeça…). O contorno acompanha as curvas do modelo.':'Corta com um plano reto. Reduza a área para cortar só uma parte (um braço, por exemplo).';
+  $('cut-hint').textContent=m==='livre'?'Toque no modelo: marcar ponto · arraste um ponto: mover · arraste o fundo: girar':'Arraste: girar · Shift ou botão direito: mover · Roda ou pinça: zoom';
+  $('cut-canvas').style.cursor=m==='livre'?'crosshair':(S.dragArea?'move':'grab');
+  updateTipoUI(); rebuildScene(); renderPanel();
+}
+function clearPoints(){ S.points=[]; S.sel=-1; S.paths=[]; clearTimeout(S.pathTimer); }
+function addPointAt(cx,cy){
+  const hit=pickAt(cx,cy);
+  if(!hit){ status('Clique sobre o modelo para marcar o ponto.','warn'); return; }
+  S.points.push({tri:hit.tri,p:hit.p,n:hit.n}); S.sel=S.points.length-1;
+  recomputePaths(-1); status('');
+}
+function ptUndo(){ if(!S.points.length) return; S.points.pop(); S.sel=S.points.length-1; recomputePaths(-1); }
+function ptDelete(){ if(S.sel<0||S.sel>=S.points.length) return; S.points.splice(S.sel,1); S.sel=S.points.length-1; recomputePaths(-1); }
+function ptClear(){ clearPoints(); renderPoints(); status(''); }
+// caminhos entre pontos consecutivos (fecha o laço a partir de 3 pontos)
+function recomputePaths(changed){
+  const p=activePiece(), n=S.points.length;
+  if(!p||n<2){ S.paths=[]; renderPoints(); return; }
+  const segs=n===2?1:n; if(changed<0||S.paths.length!==segs) S.paths=new Array(segs).fill(null);
+  const todo=[]; for(let i=0;i<segs;i++) if(changed<0||i===changed||i===(changed-1+n)%n||!S.paths[i]) todo.push(i);
+  for(const i of todo){
+    try{ const r=C.surfacePath(p.soup,S.points[i],S.points[(i+1)%n]); S.paths[i]=r.error?{error:r.error}:r; }
+    catch(e){ S.paths[i]={error:String(e.message||e)}; }
+  }
+  renderPoints();
+}
+function renderPoints(){
+  if(!S.ready) return;
+  while(S.ptGroup.children.length){ const m=S.ptGroup.children[0]; S.ptGroup.remove(m); if(m.userData.own){ if(m.geometry) m.geometry.dispose(); if(m.material) m.material.dispose(); } }
+  const n=S.points.length;
+  if(S.mode==='livre'&&S.pieces.length){
+    const r=S.radius*0.014, off=S.radius*0.004;
+    S.points.forEach((pt,i)=>{
+      const m=new T.Mesh(new T.SphereGeometry(r,12,10),new T.MeshBasicMaterial({color:i===S.sel?0xff8a4d:0xffd23f,depthTest:false}));
+      m.renderOrder=10; m.userData.own=true; m.position.set(pt.p[0]+pt.n[0]*off,pt.p[1]+pt.n[1]*off,pt.p[2]+pt.n[2]*off); S.ptGroup.add(m);
+    });
+    const ok=[],bad=[], segs=n<2?0:(n===2?1:n);
+    for(let i=0;i<segs;i++){
+      const pa=S.paths[i];
+      if(pa&&pa.pts){ for(let k=0;k<pa.pts.length-1;k++) ok.push(...pa.pts[k],...pa.pts[k+1]); }
+      else { const A=S.points[i].p,B=S.points[(i+1)%n].p; bad.push(...A,...B); }
+    }
+    const mkLine=(arr,color)=>{ if(!arr.length) return; const g=new T.BufferGeometry(); g.setAttribute('position',new T.BufferAttribute(new Float32Array(arr),3)); const l=new T.LineSegments(g,new T.LineBasicMaterial({color,depthTest:false})); l.renderOrder=9; l.userData.own=true; S.ptGroup.add(l); };
+    mkLine(ok,0xffd23f); mkLine(bad,0xff4d4d);
+  }
+  const el=$('cut-pt-count'); if(el) el.textContent=n+' ponto(s)'+(n<3?' — marque pelo menos 3':'');
+  requestRender();
+}
 
 // ---------- importação ----------
 async function onFile(inp){
@@ -3460,25 +4129,25 @@ async function onFile(inp){
     soup=C.mapSoup(soup,(x,y,z)=>[x-c[0],y-c[1],z-c[2]]);
     S.pieces.forEach(disposePiece);
     S.baseName=f.name.replace(/\.[^.]+$/,'');
-    S.pieces=[]; S.undo=[]; S.partN=1; S.nextId=1;
+    S.pieces=[]; S.undo=[]; S.partN=1; S.nextId=1; clearPoints();
     const p={id:S.nextId++,nome:'Parte 1',soup,tipo:'parte',base:null,color:0,geo:null,bounds:null};
     S.pieces.push(p); S.active=p.id; S.explode=0; $('cut-explode').value=0;
-    S.axis='z'; S.tiltA=0; S.tiltB=0; S.pos=0.5; $('cut-tiltA').value=0; $('cut-tiltB').value=0;
+    S.axis='z'; S.tiltA=0; S.tiltB=0; S.pos=0.5; S.areaAuto=true; S.offU=0; S.offV=0; $('cut-tiltA').value=0; $('cut-tiltB').value=0;
     $('cut-empty').style.display='none';
     fit(); updatePlane(true); rebuildScene(); renderPanel();
-    status('Modelo carregado: '+nT.toLocaleString('pt-BR')+' triângulos. Posicione o plano e clique em Cortar.','ok');
+    status('Modelo carregado: '+nT.toLocaleString('pt-BR')+' triângulos. '+(S.mode==='livre'?'Toque no modelo para marcar os pontos do contorno.':'Posicione o plano e clique em Cortar.'),'ok');
   }catch(e){ status(e.message||String(e),'err'); }
 }
 function canTransform(){ return S.pieces.length===1&&S.undo.length===0; }
 function applyScale(){
   if(!canTransform()){ status('Ajuste de escala só antes do primeiro corte.','err'); return; }
   const k=parseFloat($('cut-scale').value); if(!(k>0)){ status('Escala inválida.','err'); return; }
-  const p=S.pieces[0]; p.soup=C.mapSoup(p.soup,(x,y,z)=>[x*k,y*k,z*k]); disposePiece(p); p.bounds=null; $('cut-scale').value=1;
+  const p=S.pieces[0]; p.soup=C.mapSoup(p.soup,(x,y,z)=>[x*k,y*k,z*k]); disposePiece(p); p.bounds=null; $('cut-scale').value=1; clearPoints();
   fit(); updatePlane(true); rebuildScene(); renderPanel(); status('Escala ×'+k+' aplicada.','ok');
 }
 function rotateYtoZ(){
   if(!canTransform()){ status('Rotação só antes do primeiro corte.','err'); return; }
-  const p=S.pieces[0]; p.soup=C.mapSoup(p.soup,(x,y,z)=>[x,-z,y]); disposePiece(p); p.bounds=null;
+  const p=S.pieces[0]; p.soup=C.mapSoup(p.soup,(x,y,z)=>[x,-z,y]); disposePiece(p); p.bounds=null; clearPoints();
   fit(); updatePlane(true); rebuildScene(); renderPanel(); status('Modelo girado 90° (Y → Z).','ok');
 }
 
@@ -3487,40 +4156,58 @@ function pushUndo(){
   S.undo.push({pieces:S.pieces.slice(),active:S.active,partN:S.partN});
   if(S.undo.length>12) S.undo.shift();
 }
+function applyResult(p,list,pins,msgHead,warn,ctx){
+  pushUndo();
+  const mk=(nome,soup,tipo,base)=>({id:S.nextId++,nome,soup,tipo,base,color:S.partN,geo:null,bounds:null});
+  const parts=list.map(q=>mk('Parte '+(++S.partN),q.soup,'parte',q.base));
+  const pinP=pins.map(q=>mk(q.nome,q.soup,'pino',ctx.u));
+  const i=S.pieces.indexOf(p);
+  S.pieces.splice(i,1,...parts,...pinP); disposePiece(p);
+  S.active=parts[0].id; S.pos=0.5; S.areaAuto=true; S.offU=0; S.offV=0; clearPoints();
+  updatePlane(true); rebuildScene(); renderPanel();
+  let msg=msgHead+(pins.length?' + '+pins.length+' peça(s) de encaixe':'')+'.';
+  if(warn.length) msg+=' ⚠️ '+warn.join(' ');
+  status(msg,warn.length?'warn':'ok');
+}
 async function cut(){
   const p=activePiece(); if(!p||S.busy||p.tipo==='pino') return;
+  if(S.mode==='livre'&&S.points.length<3){ status('Marque pelo menos 3 pontos no modelo para definir o contorno.','err'); return; }
   S.busy=true; setBusy(true); status('Cortando… (modelos grandes podem levar alguns segundos)');
   await new Promise(r=>setTimeout(r,40));
   try{
-    const n=planeNormal(), d=planeD(), o=readOpts();
-    const r=C.cutPiece(p.soup,[n.x,n.y,n.z],d,o);
+    if(S.mode==='livre'){
+      const lp=C.buildLoop(p.soup,S.points.slice());
+      if(lp.error){ status(lp.error,'err'); return; }
+      const r=C.cutAlongLoop(p.soup,lp);
+      if(r.error){ status(r.error,'err'); return; }
+      applyResult(p,r.pieces,[],'Corte livre feito: '+r.pieces.length+' peças',r.warn,{u:null});
+      return;
+    }
+    const n=planeNormal(), d=planeD(), o=readOpts(), g=areaGeom();
+    const area=S.areaAuto?null:{c:g.ctr,hw:g.W/2,hh:g.H/2};
+    const r=C.cutPiece(p.soup,[n.x,n.y,n.z],d,o,area);
     if(r.error){ status(r.error,'err'); return; }
-    pushUndo();
-    const mk=(nome,soup,tipo,base)=>({id:S.nextId++,nome,soup,tipo,base,color:S.partN,geo:null,bounds:null});
-    const a=mk('Parte '+(++S.partN),r.a,'parte',r.baseA), b=mk('Parte '+(++S.partN),r.b,'parte',r.baseB);
-    const pins=r.pins.map(q=>mk(q.nome,q.soup,'pino',r.u));
-    const i=S.pieces.indexOf(p);
-    S.pieces.splice(i,1,a,b,...pins); disposePiece(p);
-    S.active=a.id; S.pos=0.5;
-    updatePlane(true); rebuildScene(); renderPanel();
-    let msg='Corte feito: 2 partes'+(r.pins.length?' + '+r.pins.length+' pino(s)':'')+'.';
-    if(o.tipo!=='nenhum'&&!r.pinCount) msg+=' Nenhum encaixe coube nesta seção.';
-    if(r.warn.length) msg+=' ⚠️ '+r.warn.join(' ');
-    status(msg,r.warn.length?'warn':'ok');
+    let head='Corte feito: '+r.pieces.length+' partes';
+    if(o.tipo!=='nenhum'&&!r.pinCount) head+=' (nenhum encaixe coube nesta seção)';
+    applyResult(p,r.pieces,r.pins,head,r.warn,{u:r.u});
   }catch(e){ status('Erro ao cortar: '+(e.message||e),'err'); }
   finally{ S.busy=false; setBusy(false); }
 }
-function setBusy(b){ const el=$('cut-btn'); if(el){ el.disabled=b; el.textContent=b?'⏳ Cortando…':'✂️ Cortar peça ativa'; } }
+function setBusy(b){ const el=$('cut-btn'); if(el){ el.disabled=b; el.textContent=b?'⏳ Cortando…':(S.mode==='livre'?'✂️ Cortar pelos pontos':'✂️ Cortar peça ativa'); } }
 function undo(){
   const u=S.undo.pop(); if(!u) return;
   S.pieces.forEach(p=>{ if(!u.pieces.includes(p)) disposePiece(p); });
-  S.pieces=u.pieces; S.active=u.active; S.partN=u.partN;
+  S.pieces=u.pieces; S.active=u.active; S.partN=u.partN; clearPoints(); S.areaAuto=true; S.offU=0; S.offV=0;
   updatePlane(true); rebuildScene(); renderPanel(); status('Corte desfeito.','ok');
 }
-function select(id){ const p=S.pieces.find(x=>x.id===id); if(!p) return; S.active=id; S.pos=0.5; updatePlane(true); rebuildScene(); renderPanel(); }
+function select(id){
+  const p=S.pieces.find(x=>x.id===id); if(!p) return;
+  S.active=id; S.pos=0.5; S.areaAuto=true; S.offU=0; S.offV=0; clearPoints();
+  updatePlane(true); rebuildScene(); renderPanel();
+}
 function remove(id){
   const p=S.pieces.find(x=>x.id===id); if(!p) return;
-  pushUndo(); S.pieces=S.pieces.filter(x=>x!==p); disposePiece(p);
+  pushUndo(); S.pieces=S.pieces.filter(x=>x!==p); disposePiece(p); clearPoints();
   if(S.active===id){ const n=S.pieces.find(x=>x.tipo!=='pino')||S.pieces[0]; S.active=n?n.id:null; }
   if(!S.pieces.length) $('cut-empty').style.display='';
   updatePlane(true); rebuildScene(); renderPanel();
@@ -3577,7 +4264,8 @@ async function open(){
   resize(); updateCamera();
 }
 
-return {open,onFile,setAxis,onPos,onPosMM,onTilt,resetPlane,onExplode,applyScale,rotateYtoZ,cut,undo,select,remove,exportOne,exportAll,savePrefs,fit};
+return {open,onFile,setAxis,onPos,onPosMM,onTilt,resetPlane,onExplode,applyScale,rotateYtoZ,cut,undo,select,remove,exportOne,exportAll,savePrefs,fit,
+  setMode,onArea,areaFit,setDragArea,ptUndo,ptDelete,ptClear};
 })();
 
 const pageTitles={
