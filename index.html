@@ -3692,7 +3692,7 @@ function cutAlongLoop(src,loop0){
     }
   }
   if(cPlus===null||cMinus===null) return {error:'Não consegui identificar os dois lados do contorno.'};
-  if(cPlus===cMinus) return {error:'Este contorno não separa o modelo em duas partes. Feche o contorno em volta da região.',dbg:{all,barrier}};
+  if(cPlus===cMinus) return {error:'Este contorno não separa o modelo em duas partes. Se ele já dá a volta inteira, o modelo deve ter outra ligação (ex.: as duas pernas unidas pela base): corte essa ligação antes pelo corte por plano. Se for um retalho, feche o contorno em volta da região.',dbg:{all,barrier}};
   // tampa: triangula o contorno projetado no plano médio (Newell)
   let nx=0,ny=0,nz=0;
   for(let k=0;k<nL;k++){ const p=pts[k],q=pts[(k+1)%nL]; nx+=(p[1]-q[1])*(p[2]+q[2]); ny+=(p[2]-q[2])*(p[0]+q[0]); nz+=(p[0]-q[0])*(p[1]+q[1]); }
