@@ -2365,6 +2365,7 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
                 <select class="form-input" id="cut-tipo" onchange="VCut.savePrefs()">
                   <option value="dowel">Pino solto</option>
                   <option value="plug">Macho e fêmea</option>
+                  <option value="degrau">Degrau (só no corte livre)</option>
                   <option value="nenhum">Sem encaixe</option>
                 </select></div>
               <div><label class="form-label">Formato</label>
@@ -2376,11 +2377,19 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
             </div>
             <div class="cut-muted" id="cut-tipo-hint" style="margin:8px 0 10px"></div>
             <div class="cut-row">
-              <div><label class="form-label">Diâmetro / largura (mm)</label><input type="number" class="form-input" id="cut-diam" value="5" step="0.5" min="2" onchange="VCut.savePrefs()"></div>
+              <div><label class="form-label" id="cut-diam-lbl">Diâmetro / largura (mm)</label><input type="number" class="form-input" id="cut-diam" value="5" step="0.5" min="2" onchange="VCut.savePrefs()"></div>
               <div><label class="form-label">Profundidade (mm)</label><input type="number" class="form-input" id="cut-prof" value="10" step="1" min="3" onchange="VCut.savePrefs()"></div>
               <div><label class="form-label">Folga por lado (mm)</label><input type="number" class="form-input" id="cut-folga" value="0.15" step="0.05" min="0" max="1" onchange="VCut.savePrefs()"></div>
               <div><label class="form-label">Pinos por seção</label><input type="number" class="form-input" id="cut-qtd" value="1" step="1" min="1" max="4" onchange="VCut.savePrefs()"></div>
               <div><label class="form-label">Girar encaixe (°)</label><input type="number" class="form-input" id="cut-rot" value="0" step="5" min="-180" max="180" onchange="VCut.savePrefs()"></div>
+            </div>
+            <div class="cut-row" id="cut-row-free" style="margin-top:8px;display:none">
+              <div><label class="form-label">Eixo do encaixe</label>
+                <select class="form-input" id="cut-eixo" onchange="VCut.savePrefs()">
+                  <option value="corte">Perpendicular ao corte</option>
+                  <option value="perna">Seguir o eixo da perna (peça menor)</option>
+                </select></div>
+              <div id="cut-chave-wrap" style="display:none;align-self:end"><label class="nfc-toggle"><input type="checkbox" id="cut-chave" checked onchange="VCut.savePrefs()"> Chave (entalhe) que trava a rotação</label></div>
             </div>
             <div class="cut-muted" style="margin-top:8px">Os encaixes são posicionados sozinhos no ponto mais largo da seção e a profundidade é limitada para não furar a parede da peça.</div>
           </div>
@@ -3259,14 +3268,176 @@ function capSoup(out,region,holeRings,flip){
 }
 const ringVerts=(pts2,pts3)=>pts2.map((p,i)=>({x:p[0],y:p[1],P:pts3[i]}));
 
+// ---------- degrau (ressalto) e eixo do encaixe: geometria 2D auxiliar ----------
+function polyArea2(p){ let a=0; for(let i=0,n=p.length;i<n;i++){ const q=p[(i+1)%n]; a+=p[i][0]*q[1]-q[0]*p[i][1]; } return a/2; }
+function resamplePoly(poly,N){ // N pontos uniformes por comprimento de arco
+  const n=poly.length, L=[0];
+  for(let i=0;i<n;i++){ const a=poly[i],b=poly[(i+1)%n]; L.push(L[i]+Math.hypot(b[0]-a[0],b[1]-a[1])); }
+  const tot=L[n], out=[]; let j=0;
+  for(let k=0;k<N;k++){
+    const t=tot*k/N; while(j<n-1&&L[j+1]<t) j++;
+    const a=poly[j],b=poly[(j+1)%n], f=(t-L[j])/Math.max(1e-12,L[j+1]-L[j]);
+    out.push([a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f]);
+  }
+  return out;
+}
+function smoothPoly(poly,it,w){ // média móvel circular
+  let p=poly;
+  for(let s=0;s<it;s++){
+    const n=p.length, q=[];
+    for(let i=0;i<n;i++){ let x=0,y=0,c=0; for(let d=-w;d<=w;d++){ const r=p[(i+d+n)%n]; x+=r[0]; y+=r[1]; c++; } q.push([x/c,y/c]); }
+    p=q;
+  }
+  return p;
+}
+function offsetPoly(poly,dl){ // polígono CCW qualquer (também côncavo); dl>0 expande, dl<0 contrai
+  const n=poly.length, out=[];
+  for(let i=0;i<n;i++){
+    const p0=poly[(i+n-1)%n], p1=poly[i], p2=poly[(i+1)%n];
+    const e1=[p1[0]-p0[0],p1[1]-p0[1]], e2=[p2[0]-p1[0],p2[1]-p1[1]], l1=Math.hypot(e1[0],e1[1])||1e-9, l2=Math.hypot(e2[0],e2[1])||1e-9;
+    const n1=[e1[1]/l1,-e1[0]/l1], n2=[e2[1]/l2,-e2[0]/l2], k=Math.max(0.25,1+n1[0]*n2[0]+n1[1]*n2[1]);
+    out.push([p1[0]+dl*(n1[0]+n2[0])/k,p1[1]+dl*(n1[1]+n2[1])/k]);
+  }
+  return out;
+}
+function segX(a,b,c,d){
+  const o=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
+  const d1=o(a,b,c),d2=o(a,b,d),d3=o(c,d,a),d4=o(c,d,b);
+  return ((d1>0)!==(d2>0))&&((d3>0)!==(d4>0));
+}
+function polySimple(p){
+  const n=p.length;
+  for(let i=0;i<n;i++){ const a=p[i],b=p[(i+1)%n]; for(let j=i+2;j<n;j++){ if(i===0&&j===n-1) continue; if(segX(a,b,p[j],p[(j+1)%n])) return false; } }
+  return true;
+}
+function ptInPoly2(p,x,y){
+  let c=false;
+  for(let i=0,j=p.length-1;i<p.length;j=i++){
+    if(((p[i][1]>y)!==(p[j][1]>y))&&(x<(p[j][0]-p[i][0])*(y-p[i][1])/(p[j][1]-p[i][1])+p[i][0])) c=!c;
+  }
+  return c;
+}
+function distPoly2(p,x,y){
+  let bd=Infinity;
+  for(let i=0,n=p.length;i<n;i++){ const a=p[i],b=p[(i+1)%n]; const d=distSeg(x,y,a[0],a[1],b[0],b[1]); if(d<bd) bd=d; }
+  return bd;
+}
+function maxInscribed(p){ // centro e raio do maior círculo dentro do polígono
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for(const q of p){ x0=Math.min(x0,q[0]); x1=Math.max(x1,q[0]); y0=Math.min(y0,q[1]); y1=Math.max(y1,q[1]); }
+  const step=Math.max(x1-x0,y1-y0)/40; let bx=0,by=0,br=-1;
+  for(let x=x0+step/2;x<x1;x+=step) for(let y=y0+step/2;y<y1;y+=step){ if(!ptInPoly2(p,x,y)) continue; const d=distPoly2(p,x,y); if(d>br){br=d;bx=x;by=y;} }
+  for(const f of [step/8,step/64]){
+    const cx=bx,cy=by;
+    for(let i=-8;i<=8;i++) for(let j=-8;j<=8;j++){ const x=cx+i*f,y=cy+j*f; if(!ptInPoly2(p,x,y)) continue; const d=distPoly2(p,x,y); if(d>br){br=d;bx=x;by=y;} }
+  }
+  return {x:bx,y:by,r:br};
+}
+function validInset(C,q,M){
+  if(!polySimple(q)||polyArea2(q)<=0) return false;
+  for(const p of q){ if(!ptInPoly2(C,p[0],p[1])||distPoly2(C,p[0],p[1])<M*0.5) return false; }
+  return true;
+}
+// chave: entalhe retangular na ponta mais distante do centro (trava a rotação e indica o lado certo)
+function notchPoly(key){
+  const n=key.length; if(n<24) return null;
+  let cx=0,cy=0; for(const p of key){ cx+=p[0]/n; cy+=p[1]/n; }
+  let i0=0,bd=-1; key.forEach((p,i)=>{ const d=Math.hypot(p[0]-cx,p[1]-cy); if(d>bd){bd=d;i0=i;} });
+  let per=0; for(let i=0;i<n;i++){ const a=key[i],b=key[(i+1)%n]; per+=Math.hypot(b[0]-a[0],b[1]-a[1]); }
+  const sp=per/n, w=Math.max(3,Math.min(7,per*0.06)), m=Math.max(1,Math.round(w/2/sp)), k=Math.max(1.2,Math.min(2.5,w*0.35));
+  const ia=(i0-m+n)%n, ib=(i0+m)%n, Pa=key[ia], Pb=key[ib];
+  const dx=Pb[0]-Pa[0], dy=Pb[1]-Pa[1], L=Math.hypot(dx,dy); if(L<1e-6) return null;
+  const nin=[-dy/L,dx/L], out=[];
+  for(let i=ib;;i=(i+1)%n){ out.push(key[i]); if(i===ia) break; }
+  out.push([Pa[0]+nin[0]*k,Pa[1]+nin[1]*k],[Pb[0]+nin[0]*k,Pb[1]+nin[1]*k]);
+  return polySimple(out)?out:null;
+}
+// superfície da tampa (campo de alturas): ponto 3D sobre a tampa para um (x,y) do plano
+function makeSurf(tris){
+  const T=[];
+  for(const t of tris){ const [a,b,c]=t, d=(b.y-c.y)*(a.x-c.x)+(c.x-b.x)*(a.y-c.y); if(Math.abs(d)>1e-12) T.push({a,b,c,d}); }
+  return (x,y)=>{
+    let best=null,bm=-Infinity;
+    for(const t of T){
+      const l1=((t.b.y-t.c.y)*(x-t.c.x)+(t.c.x-t.b.x)*(y-t.c.y))/t.d, l2=((t.c.y-t.a.y)*(x-t.c.x)+(t.a.x-t.c.x)*(y-t.c.y))/t.d, l3=1-l1-l2, m=Math.min(l1,l2,l3);
+      if(m>bm){ bm=m; best=[t,l1,l2,l3]; if(m>=-1e-9) break; }
+    }
+    const [t,l1,l2,l3]=best;
+    return [fr(t.a.P[0]*l1+t.b.P[0]*l2+t.c.P[0]*l3),fr(t.a.P[1]*l1+t.b.P[1]*l2+t.c.P[1]*l3),fr(t.a.P[2]*l1+t.b.P[2]*l2+t.c.P[2]*l3)];
+  };
+}
+// eixo local da peça menor (ex.: perna) a partir do centro do corte; devolve também qual lado ela está
+function legAxis(all,lab,cPlus,cMinus,cen,pts){
+  const T=all.length/9, cnt=new Map();
+  for(let t=0;t<T;t++){ const c=lab.comp[t]; cnt.set(c,(cnt.get(c)||0)+1); }
+  const small=(cnt.get(cPlus)||0)<=(cnt.get(cMinus)||0)?cPlus:cMinus;
+  let r=0; for(const p of pts) r=Math.max(r,Math.hypot(p[0]-cen[0],p[1]-cen[1],p[2]-cen[2]));
+  const R=Math.max(2*r,20); let sx=0,sy=0,sz=0,sw=0;
+  for(let t=0;t<T;t++){
+    if(lab.comp[t]!==small) continue;
+    const o9=t*9, ax=all[o9],ay=all[o9+1],az=all[o9+2], bx=all[o9+3],by=all[o9+4],bz=all[o9+5], cx=all[o9+6],cy=all[o9+7],cz=all[o9+8];
+    const mx=(ax+bx+cx)/3,my=(ay+by+cy)/3,mz=(az+bz+cz)/3;
+    if(Math.hypot(mx-cen[0],my-cen[1],mz-cen[2])>R) continue;
+    const e1=[bx-ax,by-ay,bz-az], e2=[cx-ax,cy-ay,cz-az];
+    const w=0.5*Math.hypot(e1[1]*e2[2]-e1[2]*e2[1],e1[2]*e2[0]-e1[0]*e2[2],e1[0]*e2[1]-e1[1]*e2[0]);
+    sx+=mx*w; sy+=my*w; sz+=mz*w; sw+=w;
+  }
+  const smallIsPlus=small===cPlus;
+  if(!(sw>0)) return {axis:null,smallIsPlus};
+  const d=[sx/sw-cen[0],sy/sw-cen[1],sz/sw-cen[2]], l=Math.hypot(d[0],d[1],d[2]);
+  if(l<1e-6) return {axis:null,smallIsPlus};
+  return {axis:[d[0]/l,d[1]/l,d[2]/l],smallIsPlus};
+}
+// prisma de paredes (anel simples qualquer, também côncavo) + tampa triangulada. ring3: anel 3D; ring2: o mesmo anel em (x,y) do plano
+function addPrism(out,ring3,ring2,off,inward){
+  const N=ring3.length, ring1=ring3.map(p=>[fr(p[0]+off[0]),fr(p[1]+off[1]),fr(p[2]+off[2])]);
+  let ax=0,ay=0,az=0;
+  for(let k=0;k<N;k++){ const a=ring3[k],b=ring3[(k+1)%N]; ax+=(a[1]-b[1])*(a[2]+b[2]); ay+=(a[2]-b[2])*(a[0]+b[0]); az+=(a[0]-b[0])*(a[1]+b[1]); }
+  const sg=(ax*off[0]+ay*off[1]+az*off[2])>=0?1:-1;
+  for(let k=0;k<N;k++){
+    const a=ring3[k],b=ring3[(k+1)%N],c=ring1[(k+1)%N],d=ring1[k];
+    const e=[b[0]-a[0],b[1]-a[1],b[2]-a[2]], w=[sg*(e[1]*off[2]-e[2]*off[1]),sg*(e[2]*off[0]-e[0]*off[2]),sg*(e[0]*off[1]-e[1]*off[0])];
+    const want=inward?[-w[0],-w[1],-w[2]]:w;
+    out.tri(a,b,c,want); out.tri(a,c,d,want);
+  }
+  const ol=Math.hypot(off[0],off[1],off[2]), od=[off[0]/ol,off[1]/ol,off[2]/ol], wantEnd=inward?[-od[0],-od[1],-od[2]]:od;
+  const tr=triangulateRegion(ring2.map((q,i)=>({x:q[0],y:q[1],P:ring1[i]})),[]);
+  for(const t of tr.tris) out.tri(t[0].P,t[1].P,t[2].P,wantEnd);
+  return tr.ok;
+}
+// planeja o degrau: ressalto (macho) na peça menor, recesso (fêmea) na outra
+function planStep(soup,n,vs,o,warn,lift,pegPos){
+  const WALL=1.2, folga=o.folga!=null?o.folga:0.15;
+  let C=vs.map(p=>[p.x,p.y]); if(polyArea2(C)<0) C.reverse();
+  C=smoothPoly(resamplePoly(C,96),2,2);
+  const ins=maxInscribed(C);
+  if(!(ins.r>=4)){ warn.push('Degrau não colocado: a seção é pequena demais (menos de 8 mm de largura).'); return []; }
+  const M0=Math.min(Math.max(o.diam||5,1.5),ins.r*0.45);
+  let key=null, M=M0;
+  for(let t=0;t<8&&!key;t++){ const q=offsetPoly(C,-M); if(validInset(C,q,M)) key=q; else M*=0.8; }
+  if(!key){ const s=Math.max(0.35,1-M0/ins.r); key=C.map(p=>[ins.x+(p[0]-ins.x)*s,ins.y+(p[1]-ins.y)*s]); M=M0; }
+  if(o.chave){ const nk=notchPoly(key); if(nk) key=nk; else warn.push('Não foi possível abrir a chave neste contorno; o degrau saiu sem ela.'); }
+  let pocket=offsetPoly(key,folga);
+  if(!polySimple(pocket)){ const rk=Math.max(2,ins.r-M), s2=1+folga/rk; pocket=key.map(p=>[ins.x+(p[0]-ins.x)*s2,ins.y+(p[1]-ins.y)*s2]); }
+  const kk3=key.map(q=>lift(q[0],q[1])), pk3=pocket.map(q=>lift(q[0],q[1]));
+  const dir=pegPos?[-n[0],-n[1],-n[2]]:[n[0],n[1],n[2]];
+  const rays=[], step=Math.max(1,Math.floor(pk3.length/16));
+  for(let k=0;k<pk3.length;k+=step) rays.push({o:pk3[k],d:dir});
+  rays.push({o:lift(ins.x,ins.y),d:dir});
+  const hits=firstHits(soup,rays); let lim=Infinity; for(const h of hits) lim=Math.min(lim,h); lim-=WALL;
+  const depth=Math.min(o.prof,lim);
+  if(!(depth>=3)){ warn.push('Degrau não colocado: pouca espessura para a profundidade (resta '+(isFinite(lim)?Math.max(0,lim).toFixed(1):'?')+' mm).'); return []; }
+  return [{x:0,y:0,key,pocket,ri:0,width:2*Math.sqrt(Math.abs(polyArea2(key))/Math.PI),pegPos,depth,pk3,kk3,margin:M}];
+}
+
 function makeLift(p0,u,v){ return (x,y,off)=>[fr(p0[0]+u[0]*x+v[0]*y+(off?off[0]:0)),fr(p0[1]+u[1]*x+v[1]*y+(off?off[1]:0)),fr(p0[2]+u[2]*x+v[2]*y+(off?off[2]:0))]; }
 // Planeja os encaixes de uma ou mais seções planas.
 // regions: [{outer,holes}] em coordenadas 2D (u,v) do plano de normal n com origem p0.
 // Devolve os pinos aceitos ('good'), já com profundidade e anéis 3D (pk3 = cavidade, kk3 = pino).
-function planPins(soup,n,u,v,p0,regions,o,warn){
+function planPins(soup,n,u,v,p0,regions,o,warn,liftFn){
   const N=36, MARGIN=1.2, WALL=1.2, MINPIN=1.5;
   const forma=o.forma||'redondo', pr0=o.diam/2, folga=o.folga;
-  const liftR=(x,y,off)=>[fr(p0[0]+u[0]*x+v[0]*y+(off?off[0]:0)),fr(p0[1]+u[1]*x+v[1]*y+(off?off[1]:0)),fr(p0[2]+u[2]*x+v[2]*y+(off?off[2]:0))];
+  const liftR=liftFn||((x,y,off)=>[fr(p0[0]+u[0]*x+v[0]*y+(off?off[0]:0)),fr(p0[1]+u[1]*x+v[1]*y+(off?off[1]:0)),fr(p0[2]+u[2]*x+v[2]*y+(off?off[2]:0))]);
   // direção de referência do encaixe (Z do mundo projetado no plano; senão X)
   let rx=0*u[0]+0*u[1]+1*u[2], ry=v[2];
   if(Math.hypot(rx,ry)<0.3){ rx=u[0]; ry=v[0]; }
@@ -3325,8 +3496,9 @@ function planPins(soup,n,u,v,p0,regions,o,warn){
 function pinHoles(good,ri,tipo){ // furos de cada lado da tampa da região ri
   const holesA=[], holesB=[], toV=(poly2,pts3,p)=>poly2.map((q,i)=>({x:p.x+q[0],y:p.y+q[1],P:pts3[i]}));
   for(const p of good) if(p.ri===ri){
-    holesB.push(toV(p.pocket,p.pk3,p));
-    holesA.push(tipo==='plug'?toV(p.key,p.kk3,p):toV(p.pocket,p.pk3,p));
+    const pegA=tipo==='plug'||(tipo==='degrau'&&p.pegPos), pegB=tipo==='degrau'&&!p.pegPos;
+    holesB.push(pegB?toV(p.key,p.kk3,p):toV(p.pocket,p.pk3,p));
+    holesA.push(pegA?toV(p.key,p.kk3,p):toV(p.pocket,p.pk3,p));
   }
   return {holesA,holesB};
 }
@@ -3348,6 +3520,10 @@ function emitPins(R,good,o,n,liftR,forma){
       const c0=[0,0,0]; for(const q of r0){c0[0]+=q[0]/r0.length;c0[1]+=q[1]/r0.length;c0[2]+=q[2]/r0.length;}
       addDisc(dw,r0,[fr(c0[0]),fr(c0[1]),fr(c0[2])],mm);
       pinPieces.push({soup:dw.soup(),nome:label()+' '+np+' ('+p.width.toFixed(1)+'×'+len.toFixed(0)+' mm)',axisN:nn,diam:p.width,len});
+    } else if(o.tipo==='degrau'){ // ressalto na peça menor, recesso na outra
+      const hk=Math.max(2,p.depth-0.4);
+      if(p.pegPos){ addPrism(out.pos,p.kk3,p.key,sc(mm,hk),false); addPrism(out.neg,p.pk3,p.pocket,sc(mm,p.depth),true); }
+      else { addPrism(out.neg,p.kk3,p.key,sc(nn,hk),false); addPrism(out.pos,p.pk3,p.pocket,sc(nn,p.depth),true); }
     } else { // plug: macho em pos (sai para -n), fêmea em neg (entra para -n)
       addTube(out.pos,p.kk3,sc(mm,Math.max(2,p.depth-0.4)),false);
       addTube(out.neg,p.pk3,sc(mm,p.depth),true);
@@ -3748,29 +3924,58 @@ function cutAlongLoop(src,loop0,o){
   for(let k=0;k<nL;k++){ const p=pts[k],q=pts[(k+1)%nL]; nx+=(p[1]-q[1])*(p[2]+q[2]); ny+=(p[2]-q[2])*(p[0]+q[0]); nz+=(p[0]-q[0])*(p[1]+q[1]); }
   const nl=Math.hypot(nx,ny,nz); if(nl<1e-9) return {error:'Contorno degenerado (área zero).'};
   const nc=[nx/nl,ny/nl,nz/nl], cen=[0,0,0]; for(const p of pts){cen[0]+=p[0]/nL;cen[1]+=p[1]/nL;cen[2]+=p[2]/nL;}
-  const {u,v}=planeBasis(nc);
-  const vs=pts.map(P=>{ const dx=P[0]-cen[0],dy=P[1]-cen[1],dz=P[2]-cen[2]; return {x:dx*u[0]+dy*u[1]+dz*u[2],y:dx*v[0]+dy*v[1]+dz*v[2],P}; });
   let dev=0; for(const P of pts){ dev=Math.max(dev,Math.abs((P[0]-cen[0])*nc[0]+(P[1]-cen[1])*nc[1]+(P[2]-cen[2])*nc[2])); }
-  // encaixes (opcional): só quando a face de corte não é curva demais (a tampa precisa ser quase plana)
+  // encaixes (opcional): só quando a face de corte não é curva demais
   const PIN_FLAT_MAX=12; // mm de desvio em relação ao plano médio (contornos marcados à mão ficam em 3 a 10 mm)
-  const wantPins=!!o&&!!o.tipo&&o.tipo!=='nenhum'&&o.qtd>0;
-  let good=[];
-  if(wantPins){
-    if(dev>PIN_FLAT_MAX) warn.push('Sem encaixes: a face de corte é curva demais (desvio de '+dev.toFixed(1)+' mm, o limite é '+PIN_FLAT_MAX+' mm). Marque o contorno mais plano ou use o corte por plano.');
-    else good=planPins(src,nc,u,v,cen,[{outer:vs,holes:[]}],o,warn);
+  const wantPins=!!o&&!!o.tipo&&o.tipo!=='nenhum'&&(o.tipo==='degrau'||o.qtd>0);
+  const dotv=(p,q)=>p[0]*q[0]+p[1]*q[1]+p[2]*q[2];
+  const fresh=ring=>ring.map(p=>({x:p.x,y:p.y,P:p.P}));
+  // eixo do encaixe: padrão = perpendicular ao corte; opcional = eixo local da peça menor (perna)
+  let smallIsPlus=true, axisUsed=nc, axisLeg=false, axisAngle=null;
+  if(wantPins&&(o.tipo==='degrau'||o.eixo==='perna')){
+    const la=legAxis(all,lab,cPlus,cMinus,cen,pts); smallIsPlus=la.smallIsPlus;
+    if(o.eixo==='perna'){
+      if(la.axis){
+        let ax=la.axis; if(dotv(ax,nc)<0) ax=[-ax[0],-ax[1],-ax[2]];
+        axisAngle=Math.acos(Math.min(1,dotv(ax,nc)))*180/Math.PI;
+        if(axisAngle>40) warn.push('O eixo da perna está muito inclinado em relação ao corte ('+axisAngle.toFixed(0)+'°): usei o eixo perpendicular ao corte.');
+        else axisUsed=ax;
+      } else warn.push('Não consegui estimar o eixo da perna; usei o eixo perpendicular ao corte.');
+    }
   }
-  const hl=pinHoles(good,0,o&&o.tipo), fresh=ring=>ring.map(p=>({x:p.x,y:p.y,P:p.P}));
-  const capRPlus=triangulateRegion(fresh(vs),hl.holesA.map(fresh)), capRMinus=triangulateRegion(fresh(vs),hl.holesB.map(fresh));
-  if(!capRPlus.ok||!capRMinus.ok) warn.push('A tampa do corte teve triangulação imperfeita (contorno muito sinuoso); confira antes de imprimir.');
-  const capPlus=[], capMinus=[]; // plus: usa a aresta no mesmo sentido do laço -> tampa invertida
-  for(const tr of capRMinus.tris) capMinus.push(...tr[0].P,...tr[1].P,...tr[2].P);
-  for(const tr of capRPlus.tris) capPlus.push(...tr[0].P,...tr[2].P,...tr[1].P);
-  let pinPieces=[];
-  if(good.length){
-    const Rp=[{pos:new Out(),neg:new Out()}];
-    pinPieces=emitPins(Rp,good,o,nc,makeLift(cen,u,v),o.forma||'redondo');
-    capPlus.push(...Rp[0].pos.a); capMinus.push(...Rp[0].neg.a);
-  }
+  const build=(axis,wl)=>{
+    const {u,v}=planeBasis(axis);
+    const vs=pts.map(P=>{ const dx=P[0]-cen[0],dy=P[1]-cen[1],dz=P[2]-cen[2]; return {x:dx*u[0]+dy*u[1]+dz*u[2],y:dx*v[0]+dy*v[1]+dz*v[2],P}; });
+    const base0=triangulateRegion(fresh(vs),[]);
+    if(!base0.ok&&axis!==nc) return null;
+    const surf=(wantPins&&dev<=PIN_FLAT_MAX)?makeSurf(base0.tris):null;
+    const lift=surf?((x,y,off)=>{ const S=surf(x,y); return off?[fr(S[0]+off[0]),fr(S[1]+off[1]),fr(S[2]+off[2])]:S; }):null;
+    let good=[];
+    if(wantPins){
+      if(dev>PIN_FLAT_MAX) wl.push('Sem encaixes: a face de corte é curva demais (desvio de '+dev.toFixed(1)+' mm, o limite é '+PIN_FLAT_MAX+' mm). Marque o contorno mais plano ou use o corte por plano.');
+      else if(o.tipo==='degrau') good=planStep(src,axis,vs,o,wl,lift,smallIsPlus);
+      else good=planPins(src,axis,u,v,cen,[{outer:vs,holes:[]}],o,wl,lift);
+    }
+    const hl=pinHoles(good,0,o&&o.tipo);
+    const rP=good.length?triangulateRegion(fresh(vs),hl.holesA.map(fresh)):base0, rM=good.length?triangulateRegion(fresh(vs),hl.holesB.map(fresh)):base0;
+    if((!rP.ok||!rM.ok)&&axis!==nc) return null;
+    if(!rP.ok||!rM.ok) wl.push('A tampa do corte teve triangulação imperfeita (contorno muito sinuoso); confira antes de imprimir.');
+    const capPlus=[], capMinus=[]; // plus: usa a aresta no mesmo sentido do laço -> tampa invertida
+    for(const tr of rM.tris) capMinus.push(...tr[0].P,...tr[1].P,...tr[2].P);
+    for(const tr of rP.tris) capPlus.push(...tr[0].P,...tr[2].P,...tr[1].P);
+    let pinPieces=[];
+    if(good.length){
+      const Rp=[{pos:new Out(),neg:new Out()}];
+      pinPieces=emitPins(Rp,good,o,axis,lift,o.forma||'redondo');
+      capPlus.push(...Rp[0].pos.a); capMinus.push(...Rp[0].neg.a);
+    }
+    return {capPlus,capMinus,good,pinPieces,u};
+  };
+  let wl=[], built=build(axisUsed,wl);
+  if(!built){ wl=[]; warn.push('Não consegui usar o eixo da perna neste contorno; usei o eixo perpendicular ao corte.'); axisUsed=nc; built=build(nc,wl); }
+  else if(axisUsed!==nc) axisLeg=true;
+  for(const w of wl) warn.push(w);
+  const {capPlus,capMinus,good,pinPieces,u}=built;
   const idx=new Map(), counts=[];
   for(let t=0;t<all.length/9;t++){ const c=lab.comp[t]; if(!idx.has(c)){ idx.set(c,counts.length); counts.push(0); } }
   // dobras: triângulo do corpo e da tampa coincidentes com orientação oposta se anulam
@@ -3815,11 +4020,12 @@ function cutAlongLoop(src,loop0,o){
   const fill=counts.map(()=>0);
   for(let t=0;t<all.length/9;t++){ if(kill.has(t)) continue; const i=idx.get(lab.comp[t]); soups[i].set(all.subarray(t*9,t*9+9),fill[i]); fill[i]+=9; }
   soups[cpIdx].set(capP,fill[cpIdx]); soups[cmIdx].set(capM,fill[cmIdx]);
-  const hasPeg=good.length>0&&o.tipo==='plug'; // a parte com pino não é virada para a mesa
-  const out=soups.map((sp,i)=>({soup:sp,base:i===cmIdx?nc:(i===cpIdx?(hasPeg?null:[-nc[0],-nc[1],-nc[2]]):null)}));
+  const pegOnPlus=good.length>0&&(o.tipo==='plug'||(o.tipo==='degrau'&&good[0].pegPos)); // a parte com pino/ressalto não é virada para a mesa
+  const pegOnMinus=good.length>0&&o.tipo==='degrau'&&!good[0].pegPos;
+  const out=soups.map((sp,i)=>({soup:sp,base:i===cmIdx?(pegOnMinus?null:nc):(i===cpIdx?(pegOnPlus?null:[-nc[0],-nc[1],-nc[2]]):null)}));
   out.sort((x,y)=>y.soup.length-x.soup.length);
   if(dev>0.5&&!(wantPins&&dev>PIN_FLAT_MAX)) warn.push(good.length?(dev>3?'A face de corte é curva (desvio de '+dev.toFixed(1)+' mm do plano médio): o encaixe foi colocado no plano médio e as duas partes se encaixam, mas confira o ajuste e imprima com suportes.':'A face de corte é levemente curva (desvio de '+dev.toFixed(1)+' mm do plano médio): imprima com suportes e confira o encaixe antes de imprimir.'):'A face de corte é curva (desvio de '+dev.toFixed(1)+' mm do plano médio): imprima com suportes.');
-  return {pieces:out,warn,dev,normal:nc,pins:pinPieces,pinCount:good.length,u};
+  return {pieces:out,warn,dev,normal:nc,pins:pinPieces,pinCount:good.length,u,axis:axisUsed,axisLeg,axisAngle,step:good.length&&o.tipo==='degrau'?{margin:good[0].margin,depth:good[0].depth,pegOnSmall:true}:null};
 }
 
 // ---------- preparo na importação: solda tolerante, limpeza e diagnóstico ----------
@@ -3910,25 +4116,35 @@ function loadPrefs(){
     if(p.diam) $('cut-diam').value=p.diam; if(p.prof) $('cut-prof').value=p.prof;
     if(p.folga!=null) $('cut-folga').value=p.folga; if(p.qtd) $('cut-qtd').value=p.qtd;
     if(p.orient!=null) $('cut-orient').checked=!!p.orient;
+    if(p.eixo) $('cut-eixo').value=p.eixo;
+    if(p.chave!=null) $('cut-chave').checked=!!p.chave;
   }catch(e){}
 }
 function savePrefs(){
-  try{ localStorage.setItem('vtm_cortador_prefs',JSON.stringify({tipo:$('cut-tipo').value,forma:$('cut-forma').value,rot:+$('cut-rot').value,diam:+$('cut-diam').value,prof:+$('cut-prof').value,folga:+$('cut-folga').value,qtd:+$('cut-qtd').value,orient:$('cut-orient').checked})); }catch(e){}
+  try{ localStorage.setItem('vtm_cortador_prefs',JSON.stringify({tipo:$('cut-tipo').value,forma:$('cut-forma').value,rot:+$('cut-rot').value,diam:+$('cut-diam').value,prof:+$('cut-prof').value,folga:+$('cut-folga').value,qtd:+$('cut-qtd').value,orient:$('cut-orient').checked,eixo:$('cut-eixo').value,chave:$('cut-chave').checked})); }catch(e){}
   updateTipoUI();
 }
 function updateTipoUI(){
-  const t=$('cut-tipo').value, off=t==='nenhum', livre=S.mode==='livre', forma=$('cut-forma').value;
+  const livre=S.mode==='livre', sel=$('cut-tipo'), od=sel.querySelector('option[value="degrau"]');
+  if(od) od.disabled=!livre;
+  if(!livre&&sel.value==='degrau') sel.value='dowel';
+  const t=sel.value, off=t==='nenhum', step=t==='degrau', forma=$('cut-forma').value;
   ['cut-tipo','cut-forma','cut-diam','cut-prof','cut-folga','cut-qtd','cut-rot'].forEach(id=>{ $(id).disabled=(id!=='cut-tipo'&&off); });
-  $('cut-rot').disabled=off||forma==='redondo';
-  const hint={nenhum:'Corte simples, sem furos nem pinos.',dowel:'Furos nas duas partes e uma peça de encaixe solta para imprimir deitada.',plug:'Uma parte recebe o pino (macho), a outra o furo (fêmea). A parte com pino não é virada automaticamente para a mesa.'};
+  if(step) ['cut-forma','cut-qtd','cut-rot'].forEach(id=>{ $(id).disabled=true; });
+  $('cut-rot').disabled=off||step||forma==='redondo';
+  $('cut-diam-lbl').textContent=step?'Largura do degrau (mm)':'Diâmetro / largura (mm)';
+  $('cut-row-free').style.display=(livre&&!off)?'':'none';
+  $('cut-chave-wrap').style.display=step?'':'none';
+  const hint={nenhum:'Corte simples, sem furos nem pinos.',dowel:'Furos nas duas partes e uma peça de encaixe solta para imprimir deitada.',plug:'Uma parte recebe o pino (macho), a outra o furo (fêmea). A parte com pino não é virada automaticamente para a mesa.',degrau:'A peça menor (ex.: a perna) ganha um ressalto que acompanha o contorno do corte, afastado da borda pela largura do degrau; a outra peça recebe o recesso correspondente, com folga. A faixa que sobra na borda vira o degrau onde a peça assenta. A peça com ressalto não é virada automaticamente para a mesa.'};
   let h=hint[t]||'';
-  if(forma==='dovetail'&&!off) h+=' Rabo de andorinha: pino em forma de cauda trapezoidal (ponta larga = diâmetro), que impede a peça de girar e dá direção ao encaixe.';
-  if(forma==='quadrado'&&!off) h+=' Pino quadrado: impede a peça de girar.';
-  $('cut-tipo-hint').textContent=h+((livre&&!off)?' No corte livre os encaixes só entram se a face de corte for quase plana (desvio de até 12 mm em relação ao plano médio do contorno); senão o corte sai sem encaixe e o app avisa.':'');
+  if(forma==='dovetail'&&!off&&!step) h+=' Rabo de andorinha: pino em forma de cauda trapezoidal (ponta larga = diâmetro), que impede a peça de girar e dá direção ao encaixe.';
+  if(forma==='quadrado'&&!off&&!step) h+=' Pino quadrado: impede a peça de girar.';
+  if(step) h+=' A chave é um entalhe na ponta mais distante do contorno: trava a rotação e só deixa a peça entrar de um jeito.';
+  $('cut-tipo-hint').textContent=h+((livre&&!off)?' No corte livre os encaixes só entram se a face de corte tiver desvio de até 12 mm em relação ao plano médio do contorno; senão o corte sai sem encaixe e o app avisa. "Seguir o eixo da perna" inclina o encaixe para acompanhar a peça menor (até 40° do corte).':'');
 }
 function readOpts(){
   const clamp=(v,a,b,d)=>{v=parseFloat(v); return isFinite(v)?Math.min(b,Math.max(a,v)):d;};
-  return {tipo:$('cut-tipo').value,forma:$('cut-forma').value,rot:clamp($('cut-rot').value,-180,180,0),diam:clamp($('cut-diam').value,2,30,5),prof:clamp($('cut-prof').value,3,60,10),folga:clamp($('cut-folga').value,0,1,0.15),qtd:Math.round(clamp($('cut-qtd').value,1,4,1))};
+  return {tipo:$('cut-tipo').value,forma:$('cut-forma').value,rot:clamp($('cut-rot').value,-180,180,0),diam:clamp($('cut-diam').value,2,30,5),prof:clamp($('cut-prof').value,3,60,10),folga:clamp($('cut-folga').value,0,1,0.15),qtd:Math.round(clamp($('cut-qtd').value,1,4,1)),chave:!!$('cut-chave').checked,eixo:$('cut-eixo').value};
 }
 
 // ---------- cena ----------
@@ -4307,6 +4523,8 @@ async function cut(){
       if(r.error){ status(r.error,'err'); return; }
       let head='Corte livre feito: '+r.pieces.length+' peças';
       if(o.tipo!=='nenhum'&&!r.pinCount) head+=' (sem encaixe)';
+      if(r.step) head+=' · degrau de '+r.step.margin.toFixed(1)+' mm e '+r.step.depth.toFixed(0)+' mm de altura';
+      if(r.axisLeg) head+=' · eixo da perna ('+r.axisAngle.toFixed(0)+'° do corte)';
       applyResult(p,r.pieces,r.pins||[],head,r.warn,{u:r.u||null});
       return;
     }
