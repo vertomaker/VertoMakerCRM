@@ -3755,7 +3755,54 @@ function cutAlongLoop(src,loop0){
   return {pieces:out,warn,dev,normal:nc};
 }
 
-return {pickSurface,surfacePath,buildLoop,cutAlongLoop,makePick,labelComponents,shapePoly,offsetConvex,Welder,boundsOf,concat,projRange,mapSoup,computeNormals,meshStats,sliceSoup,buildRegions,triangulateRegion,placePins,firstHits,cutPiece,parseSTL,parseOBJ,writeSTL,orientForPrint,planeBasis};
+// ---------- preparo na importação: solda tolerante, limpeza e diagnóstico ----------
+// Vértices a menos de 0,5 µm viram o MESMO ponto (coordenadas idênticas), triângulos degenerados saem,
+// malha inteira com normais invertidas (volume < 0) é virada, e devolve um relatório da malha.
+const _O0=[0],_OM=[0,-1],_OP=[0,1];
+function prepare(src){
+  const nV=src.length/3, nT=nV/3, E=5e-4, CELL=1e-2, inv=1/CELL;
+  let cap=16; while(cap<nV*2) cap<<=1;
+  const mask=cap-1, head=new Int32Array(cap).fill(-1), nxt=new Int32Array(nV);
+  const cx=new Int32Array(nV), cy=new Int32Array(nV), cz=new Int32Array(nV);
+  const rx=new Float32Array(nV), ry=new Float32Array(nV), rz=new Float32Array(nV);
+  let nr=0;
+  const hsh=(a,b,c)=>((Math.imul(a,73856093)^Math.imul(b,19349663)^Math.imul(c,83492791))>>>0)&mask;
+  const ids=new Int32Array(nV);
+  for(let i=0;i<nV;i++){
+    const x=src[i*3],y=src[i*3+1],z=src[i*3+2];
+    const fx=x*inv, fy=y*inv, fz=z*inv, a=Math.floor(fx), b=Math.floor(fy), c=Math.floor(fz);
+    const lx=(fx-a)*CELL, ly=(fy-b)*CELL, lz=(fz-c)*CELL;
+    const ox=lx<E?_OM:(CELL-lx<E?_OP:_O0), oy=ly<E?_OM:(CELL-ly<E?_OP:_O0), oz=lz<E?_OM:(CELL-lz<E?_OP:_O0);
+    let found=-1;
+    outer: for(let ia=0;ia<ox.length;ia++) for(let ib=0;ib<oy.length;ib++) for(let ic=0;ic<oz.length;ic++){
+      const A=a+ox[ia],B=b+oy[ib],Cc=c+oz[ic];
+      for(let r=head[hsh(A,B,Cc)]; r>=0; r=nxt[r]){
+        if(cx[r]===A&&cy[r]===B&&cz[r]===Cc&&Math.abs(rx[r]-x)<=E&&Math.abs(ry[r]-y)<=E&&Math.abs(rz[r]-z)<=E){ found=r; break outer; }
+      }
+    }
+    if(found<0){
+      found=nr++; cx[found]=a; cy[found]=b; cz[found]=c; rx[found]=x; ry[found]=y; rz[found]=z;
+      const h=hsh(a,b,c); nxt[found]=head[h]; head[h]=found;
+    }
+    ids[i]=found;
+  }
+  let keep=0; const out=new Float32Array(src.length); let degenerate=0;
+  for(let t=0;t<nT;t++){
+    const a=ids[t*3],b=ids[t*3+1],c=ids[t*3+2];
+    if(a===b||b===c||a===c){ degenerate++; continue; }
+    const o=keep*9;
+    out[o]=rx[a];out[o+1]=ry[a];out[o+2]=rz[a];out[o+3]=rx[b];out[o+4]=ry[b];out[o+5]=rz[b];out[o+6]=rx[c];out[o+7]=ry[c];out[o+8]=rz[c];
+    keep++;
+  }
+  let soup=out.slice(0,keep*9), flipped=false, st=meshStats(soup);
+  if(st.volume<0&&st.badOrient*20<st.tris){
+    for(let t=0;t<keep;t++){ const o=t*9; for(let k=0;k<3;k++){ const q=soup[o+3+k]; soup[o+3+k]=soup[o+6+k]; soup[o+6+k]=q; } }
+    flipped=true; st=meshStats(soup);
+  }
+  return {soup,flipped,degenerate,welded:nV-nr,stats:st};
+}
+
+return {prepare,pickSurface,surfacePath,buildLoop,cutAlongLoop,makePick,labelComponents,shapePoly,offsetConvex,Welder,boundsOf,concat,projRange,mapSoup,computeNormals,meshStats,sliceSoup,buildRegions,triangulateRegion,placePins,firstHits,cutPiece,parseSTL,parseOBJ,writeSTL,orientForPrint,planeBasis};
 })();
 
 // ===================== CORTADOR 3D (módulo nativo) =====================
@@ -4123,8 +4170,18 @@ async function onFile(inp){
     if(ext==='obj') soup=C.parseOBJ(await f.text());
     else if(ext==='stl') soup=C.parseSTL(await f.arrayBuffer());
     else throw new Error('Formato não suportado. Use STL ou OBJ.');
+    const nRaw=soup.length/9;
+    if(nRaw>1500000) throw new Error('Modelo muito pesado ('+nRaw.toLocaleString('pt-BR')+' triângulos). Reduza a malha (decimate) para até ~1,5 milhão.');
+    status('Preparando a malha ('+nRaw.toLocaleString('pt-BR')+' triângulos)…');
+    await new Promise(r=>setTimeout(r,30));
+    const prep=C.prepare(soup); soup=prep.soup;
+    if(!soup.length) throw new Error('O arquivo não tem triângulos válidos.');
     const nT=soup.length/9;
-    if(nT>1500000) throw new Error('Modelo muito pesado ('+nT.toLocaleString('pt-BR')+' triângulos). Reduza a malha (decimate) para até ~1,5 milhão.');
+    const avisos=[], stx=prep.stats;
+    if(stx.open>0) avisos.push(stx.open+' aresta(s) aberta(s): malha não fechada, o corte pode deixar a seção aberta');
+    if(stx.nonManifold>0) avisos.push(stx.nonManifold+' aresta(s) não-manifold');
+    if(stx.badOrient>0) avisos.push(stx.badOrient+' aresta(s) com orientação inconsistente');
+    const nota=prep.flipped?' As normais estavam invertidas e foram corrigidas.':'';
     const b=C.boundsOf(soup), c=[(b.min[0]+b.max[0])/2,(b.min[1]+b.max[1])/2,(b.min[2]+b.max[2])/2];
     soup=C.mapSoup(soup,(x,y,z)=>[x-c[0],y-c[1],z-c[2]]);
     S.pieces.forEach(disposePiece);
@@ -4135,7 +4192,7 @@ async function onFile(inp){
     S.axis='z'; S.tiltA=0; S.tiltB=0; S.pos=0.5; S.areaAuto=true; S.offU=0; S.offV=0; $('cut-tiltA').value=0; $('cut-tiltB').value=0;
     $('cut-empty').style.display='none';
     fit(); updatePlane(true); rebuildScene(); renderPanel();
-    status('Modelo carregado: '+nT.toLocaleString('pt-BR')+' triângulos. '+(S.mode==='livre'?'Toque no modelo para marcar os pontos do contorno.':'Posicione o plano e clique em Cortar.'),'ok');
+    status('Modelo carregado: '+nT.toLocaleString('pt-BR')+' triângulos.'+nota+(avisos.length?' Atenção: '+avisos.join('; ')+'.':'')+' '+(S.mode==='livre'?'Toque no modelo para marcar os pontos do contorno.':'Posicione o plano e clique em Cortar.'),avisos.length?'warn':'ok');
   }catch(e){ status(e.message||String(e),'err'); }
 }
 function canTransform(){ return S.pieces.length===1&&S.undo.length===0; }
