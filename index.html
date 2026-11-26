@@ -135,7 +135,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .cut-sec{display:flex;flex-direction:column;gap:12px;}
 .cut-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
 .cut-layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:16px;align-items:start;}
-.cut-viewport{position:relative;height:calc(100vh - 170px);min-height:440px;background:radial-gradient(ellipse at 50% 35%,#13233a 0%,#0a121d 70%);}
+.cut-viewport{position:sticky;top:76px;z-index:5;height:calc(100vh - 170px);min-height:440px;background:radial-gradient(ellipse at 50% 35%,#13233a 0%,#0a121d 70%);}
 #cut-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;}
 #cut-canvas:active{cursor:grabbing;}
 .cut-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:var(--text-secondary);font-size:14px;pointer-events:none;padding:20px;}
@@ -160,7 +160,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .cut-pn small{font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;}
 @media(max-width:1000px){
   .cut-layout{grid-template-columns:1fr;}
-  .cut-viewport{height:55vh;min-height:320px;}
+  .cut-viewport{height:42vh;min-height:260px;top:64px;}
 }
 .form-group{display:flex;flex-direction:column;gap:7px;}
 .form-label{font-size:11px;color:var(--text-secondary);font-weight:600;letter-spacing:1px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;}
@@ -360,6 +360,26 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
 .plan-period{font-size:12px;color:var(--text-muted);}
 .plan-feature{display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0;color:var(--text-secondary);}
 .plan-feature::before{content:'✓';color:#f5a623;font-weight:700;flex-shrink:0;}
+
+
+/* ===== Barra fixa de total (celular/tablet): Calculadora 3D e Gerador de Orçamento ===== */
+.m-bar{display:none;position:sticky;bottom:0;z-index:40;margin-top:14px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(13,21,32,.97);backdrop-filter:blur(10px);border:1px solid var(--border-bright);border-radius:12px;align-items:center;gap:8px;box-shadow:0 -6px 24px rgba(0,0,0,.45);}
+.m-bar-info{flex:1;min-width:0;}
+.m-bar-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.m-bar-value{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--accent);line-height:1.1;white-space:nowrap;}
+.m-bar .btn{padding:9px 12px;font-size:12px;min-height:40px;justify-content:center;white-space:nowrap;}
+@media(max-width:1000px){
+  .orc-layout,.calc-layout{grid-template-columns:1fr !important;gap:16px !important;}
+  .orc-side,.calc-side{position:static !important;}
+  .m-bar{display:flex;}
+}
+@media(max-width:480px){
+  .m-bar-value{font-size:20px;}
+  .m-bar .btn{padding:8px 10px;}
+  #page-calculadora3d .calc-result-box{padding:14px 8px;}
+  #page-calculadora3d [id^="calc-"][style*="font-size:52px"]{font-size:38px !important;}
+  #page-orcamento .card-body,#page-calculadora3d .card-body{padding:12px;}
+}
 
 /* ===== RESPONSIVE SYSTEM ===== */
 
@@ -1632,7 +1652,7 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
   <div class="page" id="page-orcamento">
     <div class="section-header"><div><div class="section-title">📋 Gerador de Orçamento</div><div class="section-sub">CRIE ORÇAMENTOS PROFISSIONAIS</div></div></div>
 
-    <div style="display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:start">
+    <div class="orc-layout" style="display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:start">
 
       <!-- FORMULÁRIO ESQUERDA -->
       <div style="display:flex;flex-direction:column;gap:16px">
@@ -1717,9 +1737,9 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
 
         <!-- Itens -->
         <div class="card"><div class="card-body">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
             <div class="form-label">ITENS DO ORÇAMENTO</div>
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px" onclick="importarDoCatalogo()">📚 Importar do Catálogo</button>
               <button class="btn btn-primary" style="padding:7px 12px;font-size:12px" onclick="adicionarItem()">+ Adicionar item</button>
             </div>
@@ -1754,7 +1774,7 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
       </div><!-- fim coluna esquerda -->
 
       <!-- RESUMO DIREITA (sticky) -->
-      <div style="position:sticky;top:80px;display:flex;flex-direction:column;gap:14px">
+      <div class="orc-side" style="position:sticky;top:80px;display:flex;flex-direction:column;gap:14px">
         <div class="card" style="border-color:rgba(0,212,255,.25)">
           <div class="card-header"><div class="card-title">💡 Resumo</div></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
@@ -1790,6 +1810,11 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
       </div>
 
     </div><!-- fim grid -->
+    <div class="m-bar" id="orc-mbar">
+      <div class="m-bar-info"><div class="m-bar-label">TOTAL</div><div class="m-bar-value" id="orc-mbar-total">R$ 0,00</div></div>
+      <button class="btn btn-ghost" onclick="salvarOrcamentoHistorico()">🗂️ Salvar</button>
+      <button class="btn btn-primary" onclick="exportarOrcamento()">📄 PDF</button>
+    </div>
   </div>
 
   <!-- HISTÓRICO DE ORÇAMENTOS -->
@@ -1801,7 +1826,7 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
     <div class="section-header">
       <div><div class="section-title">🧮 Calculadora de Custos</div><div class="section-sub">CALCULE O CUSTO REAL DA SUA IMPRESSÃO 3D</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+    <div class="calc-layout" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
       <div style="display:flex;flex-direction:column;gap:16px">
 
         <div class="card">
@@ -1902,7 +1927,7 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
         </div>
 
       </div>
-      <div style="display:flex;flex-direction:column;gap:14px;position:sticky;top:80px">
+      <div class="calc-side" style="display:flex;flex-direction:column;gap:14px;position:sticky;top:80px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="calc-result-box" style="margin-top:0">
             <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px">TEMPO</div>
@@ -1933,6 +1958,11 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
         <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px" onclick="salvarNoCatalogo()">📚 Salvar no Catálogo</button>
         <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="enviarParaOrcamento()">📋 Enviar para Orçamento</button>
       </div>
+    </div>
+    <div class="m-bar" id="calc-mbar">
+      <div class="m-bar-info"><div class="m-bar-label">CUSTO DA IMPRESSÃO</div><div class="m-bar-value" id="calc-mbar-total">R$0,00</div></div>
+      <button class="btn btn-ghost" onclick="calcPiece()">🧮 Calcular</button>
+      <button class="btn btn-primary" onclick="enviarParaOrcamento()">📋 Orçamento</button>
     </div>
   </div>
 
@@ -3722,7 +3752,7 @@ function cutAlongLoop(src,loop0,o){
   const vs=pts.map(P=>{ const dx=P[0]-cen[0],dy=P[1]-cen[1],dz=P[2]-cen[2]; return {x:dx*u[0]+dy*u[1]+dz*u[2],y:dx*v[0]+dy*v[1]+dz*v[2],P}; });
   let dev=0; for(const P of pts){ dev=Math.max(dev,Math.abs((P[0]-cen[0])*nc[0]+(P[1]-cen[1])*nc[1]+(P[2]-cen[2])*nc[2])); }
   // encaixes (opcional): só quando a face de corte não é curva demais (a tampa precisa ser quase plana)
-  const PIN_FLAT_MAX=3; // mm de desvio em relação ao plano médio
+  const PIN_FLAT_MAX=12; // mm de desvio em relação ao plano médio (contornos marcados à mão ficam em 3 a 10 mm)
   const wantPins=!!o&&!!o.tipo&&o.tipo!=='nenhum'&&o.qtd>0;
   let good=[];
   if(wantPins){
@@ -3788,7 +3818,7 @@ function cutAlongLoop(src,loop0,o){
   const hasPeg=good.length>0&&o.tipo==='plug'; // a parte com pino não é virada para a mesa
   const out=soups.map((sp,i)=>({soup:sp,base:i===cmIdx?nc:(i===cpIdx?(hasPeg?null:[-nc[0],-nc[1],-nc[2]]):null)}));
   out.sort((x,y)=>y.soup.length-x.soup.length);
-  if(dev>0.5&&!(wantPins&&dev>PIN_FLAT_MAX)) warn.push(good.length?'A face de corte é levemente curva (desvio de '+dev.toFixed(1)+' mm do plano médio): imprima com suportes e confira o encaixe antes de imprimir.':'A face de corte é curva (desvio de '+dev.toFixed(1)+' mm do plano médio): imprima com suportes.');
+  if(dev>0.5&&!(wantPins&&dev>PIN_FLAT_MAX)) warn.push(good.length?(dev>3?'A face de corte é curva (desvio de '+dev.toFixed(1)+' mm do plano médio): o encaixe foi colocado no plano médio e as duas partes se encaixam, mas confira o ajuste e imprima com suportes.':'A face de corte é levemente curva (desvio de '+dev.toFixed(1)+' mm do plano médio): imprima com suportes e confira o encaixe antes de imprimir.'):'A face de corte é curva (desvio de '+dev.toFixed(1)+' mm do plano médio): imprima com suportes.');
   return {pieces:out,warn,dev,normal:nc,pins:pinPieces,pinCount:good.length,u};
 }
 
@@ -3894,7 +3924,7 @@ function updateTipoUI(){
   let h=hint[t]||'';
   if(forma==='dovetail'&&!off) h+=' Rabo de andorinha: pino em forma de cauda trapezoidal (ponta larga = diâmetro), que impede a peça de girar e dá direção ao encaixe.';
   if(forma==='quadrado'&&!off) h+=' Pino quadrado: impede a peça de girar.';
-  $('cut-tipo-hint').textContent=h+((livre&&!off)?' No corte livre os encaixes só entram se a face de corte for quase plana (desvio de até 3 mm em relação ao plano médio do contorno); senão o corte sai sem encaixe e o app avisa.':'');
+  $('cut-tipo-hint').textContent=h+((livre&&!off)?' No corte livre os encaixes só entram se a face de corte for quase plana (desvio de até 12 mm em relação ao plano médio do contorno); senão o corte sai sem encaixe e o app avisa.':'');
 }
 function readOpts(){
   const clamp=(v,a,b,d)=>{v=parseFloat(v); return isFinite(v)?Math.min(b,Math.max(a,v)):d;};
@@ -4363,6 +4393,18 @@ async function open(){
 
 return {open,onFile,setAxis,onPos,onPosMM,onTilt,resetPlane,onExplode,applyScale,rotateYtoZ,cut,undo,select,remove,exportOne,exportAll,savePrefs,fit,
   setMode,onArea,areaFit,setDragArea,ptUndo,ptDelete,ptClear};
+})();
+
+
+// espelha os totais da Calculadora/Orçamento nas barras fixas do celular
+(function(){
+  function mirror(src,dst){
+    const a=document.getElementById(src), b=document.getElementById(dst); if(!a||!b) return;
+    const f=()=>{ b.textContent=a.textContent; };
+    new MutationObserver(f).observe(a,{childList:true,characterData:true,subtree:true}); f();
+  }
+  function init(){ mirror('orc-resumo-total','orc-mbar-total'); mirror('calc-custo-final','calc-mbar-total'); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 
 const pageTitles={
