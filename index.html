@@ -3229,26 +3229,11 @@ function capSoup(out,region,holeRings,flip){
 }
 const ringVerts=(pts2,pts3)=>pts2.map((p,i)=>({x:p[0],y:p[1],P:pts3[i]}));
 
-// Corta uma malha pelo plano (n,d), opcionalmente limitado a uma área retangular no plano,
-// com encaixes opcionais.
-// o: {tipo:'nenhum'|'dowel'|'plug', forma:'redondo'|'quadrado'|'dovetail', diam, prof, folga, qtd, rot}
-// area: {c:[x,y,z] centro no plano, hw, hh} (meia largura/altura, nos eixos u,v do plano) ou null = plano inteiro
-function cutPiece(soup,n,d,o,area){
-  const warn=[];
-  const sl0=sliceSoup(soup,n,d,{tag:!!area});
-  if(!sl0.pos.length||!sl0.neg.length) return {error:'O plano de corte não atravessa o modelo.'};
-  const {u,v}=planeBasis(n), p0=[n[0]*d,n[1]*d,n[2]*d];
-  let keep=null;
-  if(area){
-    const dx=area.c[0]-p0[0],dy=area.c[1]-p0[1],dz=area.c[2]-p0[2];
-    const cx=dx*u[0]+dy*u[1]+dz*u[2], cy=dx*v[0]+dy*v[1]+dz*v[2], e=1e-6;
-    keep=vs=>vs.every(p=>Math.abs(p.x-cx)<=area.hw+e&&Math.abs(p.y-cy)<=area.hh+e);
-  }
-  const cap=buildRegions(sl0.segs,n,d,keep);
-  if(!cap.regions.length) return {error:area?'A área de corte não cobre nenhuma seção completa do modelo. Aumente ou mova a área.':'Não consegui fechar a seção de corte (malha aberta ou com falhas).'};
-  if(cap.open>0) warn.push(cap.open+' contorno(s) aberto(s) na seção: a malha original pode ter falhas.');
-  const bounded=!!area&&cap.keptLoops<cap.totalLoops;
-  if(bounded) warn.push('As outras seções do modelo (fora da área) ficaram intactas.');
+function makeLift(p0,u,v){ return (x,y,off)=>[fr(p0[0]+u[0]*x+v[0]*y+(off?off[0]:0)),fr(p0[1]+u[1]*x+v[1]*y+(off?off[1]:0)),fr(p0[2]+u[2]*x+v[2]*y+(off?off[2]:0))]; }
+// Planeja os encaixes de uma ou mais seções planas.
+// regions: [{outer,holes}] em coordenadas 2D (u,v) do plano de normal n com origem p0.
+// Devolve os pinos aceitos ('good'), já com profundidade e anéis 3D (pk3 = cavidade, kk3 = pino).
+function planPins(soup,n,u,v,p0,regions,o,warn){
   const N=36, MARGIN=1.2, WALL=1.2, MINPIN=1.5;
   const forma=o.forma||'redondo', pr0=o.diam/2, folga=o.folga;
   const liftR=(x,y,off)=>[fr(p0[0]+u[0]*x+v[0]*y+(off?off[0]:0)),fr(p0[1]+u[1]*x+v[1]*y+(off?off[1]:0)),fr(p0[2]+u[2]*x+v[2]*y+(off?off[2]:0))];
@@ -3258,7 +3243,7 @@ function cutPiece(soup,n,d,o,area){
   const ang=Math.atan2(ry,rx)+(o.rot||0)*Math.PI/180;
   const pins=[]; // {x,y,key:[[x,y]], pocket:[[x,y]], ri, round}
   if(o.tipo!=='nenhum'&&o.qtd>0){
-    cap.regions.forEach((reg,ri)=>{
+    regions.forEach((reg,ri)=>{
       let pocketR, nominalPoly=null;
       if(forma==='redondo') pocketR=pr0+folga;
       else { nominalPoly=shapePoly(forma,pr0,ang); pocketR=circR(offsetConvex(nominalPoly,folga)); }
@@ -3301,23 +3286,23 @@ function cutPiece(soup,n,d,o,area){
     if(!(p.depth>=3)){ warn.push('Um pino foi descartado: pouca espessura para a profundidade (resta '+(isFinite(lim)?Math.max(0,lim).toFixed(1):'?')+' mm).'); continue; }
     good.push(p);
   }
-  // saídas por região (tampa + furos/pinos) para os lados pos (+n) e neg (-n)
-  const R=cap.regions.map(()=>({pos:new Out(),neg:new Out()})), pinPieces=[];
-  let capOk=true;
-  const toV=(poly2,pts3)=>poly2.map((p,i)=>({x:p[0],y:p[1],P:pts3[i]}));
-  for(let ri=0;ri<cap.regions.length;ri++){
-    const reg=cap.regions[ri], mine=good.filter(p=>p.ri===ri), holesA=[], holesB=[];
-    for(const p of mine){
-      p.pk3=p.pocket.map(q=>liftR(p.x+q[0],p.y+q[1]));
-      p.kk3=p.key.map(q=>liftR(p.x+q[0],p.y+q[1]));
-      const pk2=p.pocket.map(q=>[p.x+q[0],p.y+q[1]]), kk2=p.key.map(q=>[p.x+q[0],p.y+q[1]]);
-      holesB.push(toV(pk2,p.pk3));
-      holesA.push(o.tipo==='plug'?toV(kk2,p.kk3):toV(pk2,p.pk3));
-    }
-    if(!capSoup(R[ri].pos,reg,holesA,true)) capOk=false;
-    if(!capSoup(R[ri].neg,reg,holesB,false)) capOk=false;
+  for(const p of good){
+    p.pk3=p.pocket.map(q=>liftR(p.x+q[0],p.y+q[1]));
+    p.kk3=p.key.map(q=>liftR(p.x+q[0],p.y+q[1]));
   }
-  if(!capOk) warn.push('A face do corte teve triangulação imperfeita; confira antes de imprimir.');
+  return good;
+}
+function pinHoles(good,ri,tipo){ // furos de cada lado da tampa da região ri
+  const holesA=[], holesB=[], toV=(poly2,pts3,p)=>poly2.map((q,i)=>({x:p.x+q[0],y:p.y+q[1],P:pts3[i]}));
+  for(const p of good) if(p.ri===ri){
+    holesB.push(toV(p.pocket,p.pk3,p));
+    holesA.push(tipo==='plug'?toV(p.key,p.kk3,p):toV(p.pocket,p.pk3,p));
+  }
+  return {holesA,holesB};
+}
+// Gera as paredes das cavidades/pinos e as peças de encaixe soltas. R[ri] = {pos,neg} (saídas de cada lado).
+function emitPins(R,good,o,n,liftR,forma){
+  const pinPieces=[];
   let np=0;
   const sc=(vv,k)=>[vv[0]*k,vv[1]*k,vv[2]*k], nn=[n[0],n[1],n[2]], mm=[-n[0],-n[1],-n[2]];
   const label=w=>(forma==='dovetail'?'Rabo de andorinha':forma==='quadrado'?'Pino quadrado':'Pino');
@@ -3338,6 +3323,41 @@ function cutPiece(soup,n,d,o,area){
       addTube(out.neg,p.pk3,sc(mm,p.depth),true);
     }
   }
+  return pinPieces;
+}
+
+// Corta uma malha pelo plano (n,d), opcionalmente limitado a uma área retangular no plano,
+// com encaixes opcionais.
+// o: {tipo:'nenhum'|'dowel'|'plug', forma:'redondo'|'quadrado'|'dovetail', diam, prof, folga, qtd, rot}
+// area: {c:[x,y,z] centro no plano, hw, hh} (meia largura/altura, nos eixos u,v do plano) ou null = plano inteiro
+function cutPiece(soup,n,d,o,area){
+  const warn=[];
+  const sl0=sliceSoup(soup,n,d,{tag:!!area});
+  if(!sl0.pos.length||!sl0.neg.length) return {error:'O plano de corte não atravessa o modelo.'};
+  const {u,v}=planeBasis(n), p0=[n[0]*d,n[1]*d,n[2]*d];
+  let keep=null;
+  if(area){
+    const dx=area.c[0]-p0[0],dy=area.c[1]-p0[1],dz=area.c[2]-p0[2];
+    const cx=dx*u[0]+dy*u[1]+dz*u[2], cy=dx*v[0]+dy*v[1]+dz*v[2], e=1e-6;
+    keep=vs=>vs.every(p=>Math.abs(p.x-cx)<=area.hw+e&&Math.abs(p.y-cy)<=area.hh+e);
+  }
+  const cap=buildRegions(sl0.segs,n,d,keep);
+  if(!cap.regions.length) return {error:area?'A área de corte não cobre nenhuma seção completa do modelo. Aumente ou mova a área.':'Não consegui fechar a seção de corte (malha aberta ou com falhas).'};
+  if(cap.open>0) warn.push(cap.open+' contorno(s) aberto(s) na seção: a malha original pode ter falhas.');
+  const bounded=!!area&&cap.keptLoops<cap.totalLoops;
+  if(bounded) warn.push('As outras seções do modelo (fora da área) ficaram intactas.');
+  const good=planPins(soup,n,u,v,p0,cap.regions,o,warn);
+  const forma=o.forma||'redondo';
+  // saídas por região (tampa + furos/pinos) para os lados pos (+n) e neg (-n)
+  const R=cap.regions.map(()=>({pos:new Out(),neg:new Out()}));
+  let capOk=true;
+  for(let ri=0;ri<cap.regions.length;ri++){
+    const reg=cap.regions[ri], hl=pinHoles(good,ri,o.tipo);
+    if(!capSoup(R[ri].pos,reg,hl.holesA,true)) capOk=false;
+    if(!capSoup(R[ri].neg,reg,hl.holesB,false)) capOk=false;
+  }
+  if(!capOk) warn.push('A face do corte teve triangulação imperfeita; confira antes de imprimir.');
+  const pinPieces=emitPins(R,good,o,n,makeLift(p0,u,v),forma);
   const hasPeg=o.tipo==='plug'&&good.length>0;
   if(!bounded){
     const A=concat(sl0.pos,Float32Array.from(R.flatMap(r=>r.pos.a))), B=concat(sl0.neg,Float32Array.from(R.flatMap(r=>r.neg.a)));
@@ -3666,7 +3686,7 @@ function snapLoop(src,loop){
   for(let k=0;k<nL0;k++){ const a=pts[k],b=pts[(k+1)%nL0]; if(a[0]===b[0]&&a[1]===b[1]&&a[2]===b[2]) continue; np.push(a); nt.push(tris[k]); }
   return {pts:np,tris:nt};
 }
-function cutAlongLoop(src,loop0){
+function cutAlongLoop(src,loop0,o){
   const loop=snapLoop(src,loop0), {pts,tris}=loop, nL=pts.length, warn=[];
   if(nL<3) return {error:'Contorno pequeno demais. Afaste os pontos.'};
   const byTri=new Map();
@@ -3701,10 +3721,26 @@ function cutAlongLoop(src,loop0){
   const {u,v}=planeBasis(nc);
   const vs=pts.map(P=>{ const dx=P[0]-cen[0],dy=P[1]-cen[1],dz=P[2]-cen[2]; return {x:dx*u[0]+dy*u[1]+dz*u[2],y:dx*v[0]+dy*v[1]+dz*v[2],P}; });
   let dev=0; for(const P of pts){ dev=Math.max(dev,Math.abs((P[0]-cen[0])*nc[0]+(P[1]-cen[1])*nc[1]+(P[2]-cen[2])*nc[2])); }
-  const capR=triangulateRegion(vs,[]);
-  if(!capR.ok) warn.push('A tampa do corte teve triangulação imperfeita (contorno muito sinuoso); confira antes de imprimir.');
+  // encaixes (opcional): só quando a face de corte não é curva demais (a tampa precisa ser quase plana)
+  const PIN_FLAT_MAX=3; // mm de desvio em relação ao plano médio
+  const wantPins=!!o&&!!o.tipo&&o.tipo!=='nenhum'&&o.qtd>0;
+  let good=[];
+  if(wantPins){
+    if(dev>PIN_FLAT_MAX) warn.push('Sem encaixes: a face de corte é curva demais (desvio de '+dev.toFixed(1)+' mm, o limite é '+PIN_FLAT_MAX+' mm). Marque o contorno mais plano ou use o corte por plano.');
+    else good=planPins(src,nc,u,v,cen,[{outer:vs,holes:[]}],o,warn);
+  }
+  const hl=pinHoles(good,0,o&&o.tipo), fresh=ring=>ring.map(p=>({x:p.x,y:p.y,P:p.P}));
+  const capRPlus=triangulateRegion(fresh(vs),hl.holesA.map(fresh)), capRMinus=triangulateRegion(fresh(vs),hl.holesB.map(fresh));
+  if(!capRPlus.ok||!capRMinus.ok) warn.push('A tampa do corte teve triangulação imperfeita (contorno muito sinuoso); confira antes de imprimir.');
   const capPlus=[], capMinus=[]; // plus: usa a aresta no mesmo sentido do laço -> tampa invertida
-  for(const tr of capR.tris){ capMinus.push(...tr[0].P,...tr[1].P,...tr[2].P); capPlus.push(...tr[0].P,...tr[2].P,...tr[1].P); }
+  for(const tr of capRMinus.tris) capMinus.push(...tr[0].P,...tr[1].P,...tr[2].P);
+  for(const tr of capRPlus.tris) capPlus.push(...tr[0].P,...tr[2].P,...tr[1].P);
+  let pinPieces=[];
+  if(good.length){
+    const Rp=[{pos:new Out(),neg:new Out()}];
+    pinPieces=emitPins(Rp,good,o,nc,makeLift(cen,u,v),o.forma||'redondo');
+    capPlus.push(...Rp[0].pos.a); capMinus.push(...Rp[0].neg.a);
+  }
   const idx=new Map(), counts=[];
   for(let t=0;t<all.length/9;t++){ const c=lab.comp[t]; if(!idx.has(c)){ idx.set(c,counts.length); counts.push(0); } }
   // dobras: triângulo do corpo e da tampa coincidentes com orientação oposta se anulam
@@ -3749,10 +3785,11 @@ function cutAlongLoop(src,loop0){
   const fill=counts.map(()=>0);
   for(let t=0;t<all.length/9;t++){ if(kill.has(t)) continue; const i=idx.get(lab.comp[t]); soups[i].set(all.subarray(t*9,t*9+9),fill[i]); fill[i]+=9; }
   soups[cpIdx].set(capP,fill[cpIdx]); soups[cmIdx].set(capM,fill[cmIdx]);
-  const out=soups.map((sp,i)=>({soup:sp,base:i===cmIdx?nc:(i===cpIdx?[-nc[0],-nc[1],-nc[2]]:null)}));
+  const hasPeg=good.length>0&&o.tipo==='plug'; // a parte com pino não é virada para a mesa
+  const out=soups.map((sp,i)=>({soup:sp,base:i===cmIdx?nc:(i===cpIdx?(hasPeg?null:[-nc[0],-nc[1],-nc[2]]):null)}));
   out.sort((x,y)=>y.soup.length-x.soup.length);
-  if(dev>0.5) warn.push('A face de corte é curva (desvio de '+dev.toFixed(1)+' mm do plano médio): imprima com suportes e sem encaixes.');
-  return {pieces:out,warn,dev,normal:nc};
+  if(dev>0.5&&!(wantPins&&dev>PIN_FLAT_MAX)) warn.push(good.length?'A face de corte é levemente curva (desvio de '+dev.toFixed(1)+' mm do plano médio): imprima com suportes e confira o encaixe antes de imprimir.':'A face de corte é curva (desvio de '+dev.toFixed(1)+' mm do plano médio): imprima com suportes.');
+  return {pieces:out,warn,dev,normal:nc,pins:pinPieces,pinCount:good.length,u};
 }
 
 // ---------- preparo na importação: solda tolerante, limpeza e diagnóstico ----------
@@ -3851,13 +3888,13 @@ function savePrefs(){
 }
 function updateTipoUI(){
   const t=$('cut-tipo').value, off=t==='nenhum', livre=S.mode==='livre', forma=$('cut-forma').value;
-  ['cut-tipo','cut-forma','cut-diam','cut-prof','cut-folga','cut-qtd','cut-rot'].forEach(id=>{ $(id).disabled=livre||(id!=='cut-tipo'&&off); });
-  $('cut-rot').disabled=livre||off||forma==='redondo';
+  ['cut-tipo','cut-forma','cut-diam','cut-prof','cut-folga','cut-qtd','cut-rot'].forEach(id=>{ $(id).disabled=(id!=='cut-tipo'&&off); });
+  $('cut-rot').disabled=off||forma==='redondo';
   const hint={nenhum:'Corte simples, sem furos nem pinos.',dowel:'Furos nas duas partes e uma peça de encaixe solta para imprimir deitada.',plug:'Uma parte recebe o pino (macho), a outra o furo (fêmea). A parte com pino não é virada automaticamente para a mesa.'};
   let h=hint[t]||'';
   if(forma==='dovetail'&&!off) h+=' Rabo de andorinha: pino em forma de cauda trapezoidal (ponta larga = diâmetro), que impede a peça de girar e dá direção ao encaixe.';
   if(forma==='quadrado'&&!off) h+=' Pino quadrado: impede a peça de girar.';
-  $('cut-tipo-hint').textContent=livre?'Encaixes não estão disponíveis no corte livre: a face de corte é curva.':h;
+  $('cut-tipo-hint').textContent=h+((livre&&!off)?' No corte livre os encaixes só entram se a face de corte for quase plana (desvio de até 3 mm em relação ao plano médio do contorno); senão o corte sai sem encaixe e o app avisa.':'');
 }
 function readOpts(){
   const clamp=(v,a,b,d)=>{v=parseFloat(v); return isFinite(v)?Math.min(b,Math.max(a,v)):d;};
@@ -4235,9 +4272,12 @@ async function cut(){
     if(S.mode==='livre'){
       const lp=C.buildLoop(p.soup,S.points.slice());
       if(lp.error){ status(lp.error,'err'); return; }
-      const r=C.cutAlongLoop(p.soup,lp);
+      const o=readOpts();
+      const r=C.cutAlongLoop(p.soup,lp,o);
       if(r.error){ status(r.error,'err'); return; }
-      applyResult(p,r.pieces,[],'Corte livre feito: '+r.pieces.length+' peças',r.warn,{u:null});
+      let head='Corte livre feito: '+r.pieces.length+' peças';
+      if(o.tipo!=='nenhum'&&!r.pinCount) head+=' (sem encaixe)';
+      applyResult(p,r.pieces,r.pins||[],head,r.warn,{u:r.u||null});
       return;
     }
     const n=planeNormal(), d=planeD(), o=readOpts(), g=areaGeom();
