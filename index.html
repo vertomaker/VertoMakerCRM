@@ -2500,35 +2500,7 @@ input[type=range].cl-slider{accent-color:var(--accent2);width:100%;}
   <!-- ATUALIZAÇÕES -->
   <div class="page" id="page-atualizacoes">
     <div class="section-header"><div><div class="section-title">🔔 Atualizações</div><div class="section-sub">NOVIDADES DO SISTEMA</div></div></div>
-    <div style="display:grid;gap:14px">
-      <div class="card" style="border-color:rgba(255,204,0,.3)">
-        <div class="card-header"><div class="card-title">🆕 v1.2.0 — Lançamento</div><span class="nav-badge new">NOVO</span></div>
-        <div class="card-body">
-          <div style="font-size:13px;color:var(--text-secondary);line-height:1.7">
-            ✅ Todos os botões funcionais com modais reais<br>
-            ✅ Gestão de estoque com adição e reposição real<br>
-            ✅ Controle financeiro com lançamentos persistentes<br>
-            ✅ Orçamento gerado com texto copiável para WhatsApp<br>
-            ✅ Prompts com visualização e cópia de texto<br>
-            ✅ Links com abertura real em nova aba<br>
-            ✅ Guias técnicos com tabelas de referência<br>
-            ✅ Configurações com salvar e dados personalizáveis
-          </div>
-          <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:10px">LANÇADO EM 13 MAR 2025</div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">📅 Em breve — v1.3.0</div></div>
-        <div class="card-body">
-          <div style="font-size:13px;color:var(--text-secondary);line-height:1.7">
-            🔜 App mobile (Android / iOS)<br>
-            🔜 Notificações de prazo por WhatsApp<br>
-            🔜 Relatórios mensais em PDF<br>
-            🔜 Integração com Mercado Livre e Shopee
-          </div>
-        </div>
-      </div>
-    </div>
+    <div id="atualizacoes-lista" style="display:grid;gap:14px"></div>
   </div>
 
 </main>
@@ -4625,6 +4597,57 @@ return {open,onFile,setAxis,onPos,onPosMM,onTilt,resetPlane,onExplode,applyScale
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 
+
+// ===================== ATUALIZAÇÕES (changelog) =====================
+// A cada atualização do app: acrescente um item NO TOPO de VTM_CHANGELOG (e atualize o README.md).
+const VTM_CHANGELOG=[
+  {v:'1.4.0',data:'26 NOV 2026',titulo:'Cortador 3D e ajustes de uso no celular',novo:true,itens:[
+    'Cortador 3D: importação com limpeza da malha (solda tolerante, normais invertidas, aviso de malha aberta)',
+    'Corte livre por pontos, com encaixes (pino solto, degrau com ressalto, chave anti-rotação e eixo da perna)',
+    'Mensagens de erro mais claras para modelos com pernas unidas por base',
+    'Área 3D do Cortador fixa na tela ao rolar o painel',
+    'Calculadora 3D e Orçamento responsivos no celular, com barra fixa de total',
+    'Painel de Controle com dados reais de produção; tarefas com material do estoque e vários materiais'
+  ]},
+  {v:'1.3.0',data:'OUT 2026',titulo:'Novos módulos de ferramentas',itens:[
+    'Tags NFC: ler, gravar e regravar tags NDEF direto do celular',
+    'VertoColor Lab: laboratório de tintas com receitas e medida em gotas',
+    'Criador 3D: objetos paramétricos com exportação STL, OBJ e 3MF'
+  ]},
+  {v:'1.2.0',data:'13 MAR 2025',titulo:'Lançamento',itens:[
+    'Todos os botões funcionais com modais reais',
+    'Gestão de estoque com adição e reposição real',
+    'Controle financeiro com lançamentos persistentes',
+    'Orçamento gerado com texto copiável para WhatsApp',
+    'Prompts com visualização e cópia de texto',
+    'Links com abertura real em nova aba',
+    'Guias técnicos com tabelas de referência',
+    'Configurações com salvar e dados personalizáveis'
+  ]}
+];
+const VTM_ROADMAP=[
+  'Estatísticas: A receber e mais vendidos',
+  'Geradores 3D',
+  'Otimizador de Projetos',
+  'Vitrine pública',
+  'Paint (por último)',
+  'Cortador: rabo de andorinha deslizante, seleção por pintura, importar 3MF'
+];
+function renderAtualizacoes(){
+  const el=document.getElementById('atualizacoes-lista'); if(!el) return;
+  const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  let h=VTM_CHANGELOG.map(r=>`
+    <div class="card"${r.novo?' style="border-color:rgba(255,204,0,.3)"':''}>
+      <div class="card-header"><div class="card-title">${r.novo?'🆕':'📦'} v${esc(r.v)} — ${esc(r.titulo)}</div>${r.novo?'<span class="nav-badge new">NOVO</span>':''}</div>
+      <div class="card-body">
+        <div style="font-size:13px;color:var(--text-secondary);line-height:1.7">${r.itens.map(i=>'✅ '+esc(i)).join('<br>')}</div>
+        <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:10px">LANÇADO EM ${esc(r.data)}</div>
+      </div>
+    </div>`).join('');
+  h+=`<div class="card"><div class="card-header"><div class="card-title">📅 Em breve</div></div><div class="card-body"><div style="font-size:13px;color:var(--text-secondary);line-height:1.7">${VTM_ROADMAP.map(i=>'🔜 '+esc(i)).join('<br>')}</div></div></div>`;
+  el.innerHTML=h;
+}
+
 const pageTitles={
   'dashboard':['Painel de Controle','Vertomaker / Dashboard'],
   'tarefas-andamento':['Tarefas em Andamento','Pedidos / Em Andamento'],
@@ -4664,6 +4687,7 @@ function navigateTo(pageId,el){
     document.getElementById('topbar-title').textContent=pageTitles[pageId][0];
     document.getElementById('topbar-sub').textContent=pageTitles[pageId][1];
   }
+  if(pageId==='atualizacoes')renderAtualizacoes();
   if(pageId==='clientes')renderClientes();
   if(pageId==='configuracoes')atualizarUsoArmazenamento();
   if(pageId==='estatisticas')renderDashboardFinanceiro();

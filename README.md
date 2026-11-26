@@ -1,130 +1,62 @@
-# VertoMaker Creator
+# VertoMaker CRM
 
-Editor paramétrico de objetos 3D para impressão, com visualização em
-tempo real (Three.js) e exportação em **STL**, **OBJ** e **3MF**
-compatível com Bambu Studio, OrcaSlicer, PrusaSlicer e Cura.
+Sistema de gestão para a operação de impressão 3D **Vertomaker**: tarefas, clientes, estoque, financeiro, orçamentos e ferramentas para quem imprime. É um PWA de arquivo único (`index.html`), sem framework e sem servidor, com todos os dados salvos no navegador.
 
-Funciona **100% offline após o primeiro carregamento das bibliotecas**,
-abrindo `index.html` diretamente no navegador - sem servidor, sem passo
-de build. (As bibliotecas de terceiros - Three.js e suas extensões
-clássicas - são carregadas de um CDN público na primeira vez; depois
-disso o navegador as mantém em cache.)
+## Como funciona
 
-## Estrutura de pastas
+- **App:** `index.html` (interface, dados e ferramentas num só arquivo), `sw.js` (cache offline, rede primeiro), `manifest.webmanifest` e ícones.
+- **Dados:** `localStorage`, chave `vtm_db`. Backup e restauração por JSON em Configurações.
+- **Módulos separados:** `creator/` (Criador 3D, aberto por iframe) e `nfc.html` (Tags NFC).
+- **Publicação:** GitHub Pages.
 
-```
-creator/
-├── index.html                 # shell da aplicação, único ponto de entrada
-├── css/
-│   └── style.css              # design system (tokens, layout, tema claro/escuro)
-├── js/
-│   ├── registry.js            # registro central de modelos (o "plugin system")
-│   ├── icons.js                # ícones SVG inline
-│   ├── csg.js                  # motor CSG (união/subtração/interseção) - sem dependências externas
-│   ├── shapes.js                # helpers geométricos reaproveitados pelos modelos
-│   ├── estimator.js             # volume, peso, tempo de impressão, filamento, custo
-│   ├── exporter.js               # exportadores STL / OBJ / 3MF (próprios, sem addons ESM)
-│   ├── state.js                   # estado global: undo/redo, projetos, favoritos, presets, JSON
-│   ├── viewer.js                   # cena Three.js, câmera, controles, grade, eixos, captura de imagem
-│   ├── ui.js                        # renderização de sidebar, painel de parâmetros, modais
-│   └── app.js                        # bootstrap - conecta tudo, sem conhecer nenhum modelo específico
-├── models/                    # BIBLIOTECA PARAMÉTRICA - um arquivo por modelo
-│   ├── _TEMPLATE.js           # copie este arquivo para criar um modelo novo
-│   ├── caixa-parametrica.js
-│   ├── organizador.js
-│   ├── chaveiro.js
-│   ├── porta-controle.js
-│   ├── porta-celular.js
-│   ├── suporte-headset.js
-│   ├── suporte-notebook.js
-│   ├── gancho.js
-│   ├── vaso.js
-│   ├── placa-texto.js
-│   ├── suporte-parede.js
-│   ├── porta-cartoes.js
-│   └── modelo-personalizado.js
-├── icons/                     # reservado para ícones customizados (PNG/SVG) de modelos futuros
-└── assets/                    # reservado para outros recursos estáticos (fontes, texturas, etc.)
-```
+## Módulos
 
-## Cache do navegador (importante ao atualizar arquivos)
+| Área | Módulos |
+|---|---|
+| Gestão | Painel de Controle, Tarefas, Clientes (funil Kanban), Estatísticas, Calendário, Estoque, Financeiro |
+| Orçamentos | Gerador de Orçamento, Histórico de Orçamentos |
+| Ferramentas | Calculadora 3D, Criador 3D, Catálogo de Peças, Misturador de Cores, VertoColor Lab, Prompts Bonecos, Links Úteis, Tags NFC, Cortador 3D |
+| Sistema | Configurações, Atualizações, Instalar App |
 
-Todos os `<link>`/`<script>` locais em `index.html` têm um sufixo
-`?v=AAAAMMDDx` (ex.: `css/style.css?v=20260727a`). Isso existe porque
-navegadores (e o `<iframe>` do painel principal) guardam CSS/JS em
-cache agressivamente - sem esse sufixo, depois de editar um arquivo o
-usuário pode continuar vendo a versão antiga por dias.
+### Cortador 3D
 
-**Sempre que editar qualquer arquivo em `css/`, `js/` ou `models/`,
-troque o valor de `?v=...` em TODAS as tags de `creator/index.html`**
-(pode ser qualquer string nova, ex. incrementar a letra final ou usar
-a data do dia). Se o `creator/` estiver embutido via `<iframe>` no
-painel principal, atualize também o `?v=...` do `src` do iframe em
-`index.html` (busque por `criador3d-frame`).
+Divide modelos STL/OBJ no próprio navegador, sem enviar arquivos para nenhum servidor.
 
-## Como adicionar um novo modelo (sem tocar em mais nada)
+- Importação com limpeza da malha (solda tolerante, normais invertidas, aviso de malha aberta)
+- Corte por plano ou corte livre por pontos
+- Encaixes: pino solto (folga padrão 0,15 mm por lado), degrau com ressalto, chave anti-rotação e eixo da perna
+- Peças exportadas com a face de corte para baixo
 
-1. Copie `models/_TEMPLATE.js` para `models/meu-modelo.js`.
-2. Preencha `id`, `name`, `icon`, `category`, `params` e a função `generate(params)`.
-3. Adicione uma linha em `index.html`, na seção "Modelos":
-   ```html
-   <script src="models/meu-modelo.js"></script>
-   ```
+## Como atualizar o app
 
-Pronto. O modelo aparece automaticamente na barra lateral (agrupado pela
-categoria escolhida), o painel de parâmetros é gerado automaticamente a
-partir do array `params`, e os exportadores/estimador/undo-redo/JSON já
-funcionam para qualquer modelo sem alterações adicionais.
+1. Substitua `index.html` (e `sw.js`, se mudou).
+2. Em `index.html`, adicione a nova versão **no topo** de `VTM_CHANGELOG` (módulo Atualizações).
+3. Registre a mesma versão na seção **Histórico de versões** abaixo.
 
-Nenhum outro arquivo (`registry.js`, `ui.js`, `app.js`, etc.) precisa
-ser editado - esse é o ponto central do design: a "biblioteca
-paramétrica" é um plugin system.
+## Histórico de versões
 
-## Categorias disponíveis
+### v1.4.0 — 26/11/2026
+- Cortador 3D: limpeza da malha na importação, corte livre por pontos com encaixes (pino, degrau, chave, eixo da perna) e mensagens de erro mais claras
+- Área 3D do Cortador fixa ao rolar o painel
+- Calculadora 3D e Orçamento responsivos no celular, com barra fixa de total
+- Painel de Controle com dados reais de produção; tarefas com material do estoque e vários materiais
+- Módulo Atualizações passou a ser alimentado por uma lista (`VTM_CHANGELOG`)
 
-`Organização`, `Decoração`, `Escritório`, `Games`, `Ferramentas`,
-`Oficina`, `Cozinha`, `Personalizados`, `Natal`, `Halloween`, `Geek`,
-`Infantil` (definidas em `js/registry.js`, em `VertoCategories`).
+### v1.3.0 — Out/2026
+- Tags NFC, VertoColor Lab e Criador 3D
 
-## Notas técnicas importantes
+### v1.2.0 — 13/03/2025
+- Lançamento: modais reais, estoque, financeiro, orçamento com texto para WhatsApp, prompts, links, guias e configurações
 
-- **Three.js pinado na versão r146.** Essa foi a última versão do
-  Three.js publicada com o build clássico `three.min.js` (não-módulo)
-  **e** os addons clássicos (`examples/js/...`) ao mesmo tempo. Versões
-  mais novas do Three.js só distribuem ES Modules, que o Chrome recusa
-  a carregar quando a página é aberta via `file://` (erro de CORS) -
-  por isso a decisão de fixar a versão, garantindo que "abrir o
-  `index.html` e pronto" realmente funcione em qualquer navegador.
-  Para atualizar a versão do Three.js no futuro, será necessário migrar
-  para ES Modules (`type="module"`) e passar a servir os arquivos por
-  um servidor local (ex.: `npx serve`), pois o modo `file://` deixará
-  de funcionar.
-- **CSG próprio** (`js/csg.js`): implementação compacta baseada em
-  árvore BSP (união/subtração/interseção) escrita do zero, sem
-  depender de bibliotecas externas de terceiros - evita problemas de
-  versão/CDN e mantém o app 100% autocontido.
-- **Exportadores próprios** (`js/exporter.js`): STL binário, OBJ texto
-  e 3MF (contêiner ZIP + XML montado manualmente, sem compressão, o
-  que é válido pela especificação 3MF e aceito por todos os slicers
-  citados no briefing).
-- **1 unidade Three.js = 1 mm** em todo o app.
-- **Texto 3D** (`js/shapes.js`, função `textGeometry`) depende do
-  carregamento assíncrono de uma fonte (`FontLoader`); por isso,
-  `generate()` pode retornar tanto uma `THREE.BufferGeometry` quanto
-  uma `Promise<THREE.BufferGeometry>` - o `app.js` já trata os dois
-  casos.
+## Em breve
 
-## Integração com o painel principal do Vertomaker
+- Estatísticas: A receber e mais vendidos
+- Geradores 3D
+- Otimizador de Projetos
+- Vitrine pública
+- Paint
+- Cortador: rabo de andorinha deslizante, seleção por pintura, importar 3MF
 
-O Creator foi propositalmente mantido como uma aplicação separada e
-autocontida (e não incorporado ao arquivo único do painel principal).
-Isso significa que:
+## Criador 3D
 
-- Atualizar o Creator (adicionar modelo, corrigir bug, mudar visual)
-  nunca exige tocar no `index.html` do painel principal.
-- O painel principal só precisa apontar para `creator/index.html`
-  (por link em nova aba ou `<iframe>`) - veja o trecho já adicionado
-  ao menu lateral do painel principal (item "Criador 3D", seção
-  "Ferramentas").
-- Basta publicar a pasta `creator/` junto com o restante do site
-  (ex.: GitHub Pages) em `seusite.com/creator/`.
+A documentação do editor paramétrico (estrutura de pastas, como criar modelos, cache `?v=` e notas técnicas) fica em [`creator/README.md`](creator/README.md).
